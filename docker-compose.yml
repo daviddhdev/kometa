@@ -1,0 +1,10 @@
+version: "3.8"
+
+services:
+  comic-manager:
+    image: comic-manager
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./comics:/app/comics
+    restart: unless-stopped
