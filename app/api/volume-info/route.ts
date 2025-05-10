@@ -10,7 +10,7 @@ export const GET = async (req: Request) => {
   const baseUrl = "https://comicvine.gamespot.com/api";
   const url = `${baseUrl}/search/?api_key=${apiKey}&format=json&query=${encodeURIComponent(
     volumeName
-  )}&resources=volume&field_list=name,deck,description,first_issue,last_issue,count_of_issues,image,publisher,id`;
+  )}&resources=volume&field_list=name,deck,description,first_issue,last_issue,count_of_issues,image,publisher,id,start_year`;
 
   const res = await fetch(url, {
     headers: {

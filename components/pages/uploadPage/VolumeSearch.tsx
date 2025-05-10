@@ -73,6 +73,13 @@ export default function VolumeSearch({
                     <div className="font-medium">{result.name}</div>
                     <div className="text-sm text-muted-foreground">
                       {result.publisher?.name}
+                      {typeof result.count_of_issues === "number" && (
+                        <>
+                          {" "}
+                          &middot; {result.count_of_issues} issue
+                          {result.count_of_issues !== 1 ? "s" : ""}
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>

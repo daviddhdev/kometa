@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Toaster, toast } from "sonner";
 import VolumeInfoCard from "./VolumeInfoCard";
 import VolumeSearch from "./VolumeSearch";
 
@@ -98,7 +99,6 @@ function getFileIcon(fileName: string) {
 }
 
 export default function UploadPage() {
-  const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [issueCount, setIssueCount] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
@@ -151,53 +151,26 @@ export default function UploadPage() {
       enabled: debouncedSearchQuery.length > 2,
     });
 
-  const { data: issueData } = useQuery({
-    queryKey: ["getIssueInfo", selectedVolume?.name],
-    queryFn: async () => {
-      if (!selectedVolume?.name) return null;
-      const response = await fetch(
-        `/api/issue-info?name=${selectedVolume.name}`
-      );
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
-      }
-      return response.json();
-    },
-    enabled: !!selectedVolume?.name,
-  });
+  // const { data: issueData } = useQuery({
+  //   queryKey: ["getIssueInfo", selectedVolume?.name],
+  //   queryFn: async () => {
+  //     if (!selectedVolume?.name) return null;
+  //     const response = await fetch(
+  //       `/api/issue-info?name=${selectedVolume.name}`
+  //     );
+  //     if (!response.ok) {
+  //       throw new Error("Network response was not ok");
+  //     }
+  //     return response.json();
+  //   },
+  //   enabled: !!selectedVolume?.name,
+  // });
 
   useEffect(() => {
     if (selectedVolume) {
       setIssueCount(selectedVolume.count_of_issues || 1);
     }
   }, [selectedVolume]);
-
-  const genres = [
-    "Action",
-    "Adventure",
-    "Biography",
-    "Comedy",
-    "Crime",
-    "Fantasy",
-    "Historical",
-    "Horror",
-    "Mystery",
-    "Romance",
-    "Sci-Fi",
-    "Superhero",
-    "Thriller",
-    "Western",
-  ];
-
-  const addGenre = (genre: string) => {
-    if (!selectedGenres.includes(genre)) {
-      setSelectedGenres([...selectedGenres, genre]);
-    }
-  };
-
-  const removeGenre = (genre: string) => {
-    setSelectedGenres(selectedGenres.filter((g) => g !== genre));
-  };
 
   const addIssue = () => {
     setIssueCount(issueCount + 1);
@@ -278,6 +251,22 @@ export default function UploadPage() {
       formData.append("issueNumber", (issue.issueNumber || i + 1).toString());
       formData.append("title", issue.title);
       formData.append("summary", issue.summary);
+      formData.append(
+        "metadata",
+        JSON.stringify({
+          volume: {
+            id: selectedVolume.id,
+            name: selectedVolume.name,
+            publisher: selectedVolume.publisher?.name,
+            start_year: selectedVolume.start_year,
+            count_of_issues: selectedVolume.count_of_issues,
+            description: selectedVolume.description,
+            image: selectedVolume.image?.original_url,
+            site_detail_url: selectedVolume.site_detail_url,
+          },
+          // You can add more fields here if needed
+        })
+      );
 
       try {
         const response = await fetch("/api/upload-issue", {
@@ -287,11 +276,17 @@ export default function UploadPage() {
 
         if (!response.ok) {
           const errorData = await response.json();
+          toast.error(
+            `Failed to upload issue ${i + 1}: ${
+              errorData.error || "Failed to upload issue"
+            }`
+          );
           throw new Error(errorData.error || "Failed to upload issue");
         }
+        toast.success(`Issue ${i + 1} uploaded successfully!`);
       } catch (error) {
         console.error(`Error uploading issue ${i + 1}:`, error);
-        alert(
+        toast.error(
           `Failed to upload issue ${i + 1}: ${
             error instanceof Error ? error.message : "Unknown error"
           }`
@@ -302,6 +297,7 @@ export default function UploadPage() {
 
   return (
     <div className="container mx-auto px-4 py-6">
+      <Toaster />
       <Link
         href="/"
         className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground mb-6"
@@ -320,30 +316,25 @@ export default function UploadPage() {
       </div>
 
       <Tabs defaultValue="basic" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-8">
+        <TabsList className="grid w-full grid-cols-2 mb-8">
           <TabsTrigger value="basic">Basic Info</TabsTrigger>
           <TabsTrigger value="issues">Issues</TabsTrigger>
-          <TabsTrigger value="metadata">Metadata</TabsTrigger>
         </TabsList>
 
         <TabsContent value="basic">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="md:col-span-1">
-              <VolumeInfoCard selectedVolume={selectedVolume} />
-            </div>
-            <div className="md:col-span-2">
-              <VolumeSearch
-                searchQuery={searchQuery}
-                setSearchQuery={setSearchQuery}
-                showSearchResults={showSearchResults}
-                setShowSearchResults={setShowSearchResults}
-                handleVolumeSelect={handleVolumeSelect}
-                selectedVolume={selectedVolume}
-                searchResults={searchResults ?? null}
-                isSearching={isSearching}
-                searchError={searchError}
-              />
-            </div>
+          <div className="flex flex-col gap-8">
+            <VolumeSearch
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              showSearchResults={showSearchResults}
+              setShowSearchResults={setShowSearchResults}
+              handleVolumeSelect={handleVolumeSelect}
+              selectedVolume={selectedVolume}
+              searchResults={searchResults ?? null}
+              isSearching={isSearching}
+              searchError={searchError}
+            />
+            <VolumeInfoCard selectedVolume={selectedVolume} />
           </div>
         </TabsContent>
 
@@ -361,14 +352,14 @@ export default function UploadPage() {
               </Button>
             </div>
 
-            {issueCount === 0 || uploadedIssues.length === 0 ? (
+            {/* {issueCount === 0 || uploadedIssues.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                 <FileArchive className="w-12 h-12 mb-2" />
                 <div>
                   No issues uploaded yet. Click &quot;Add Issue&quot; to begin.
                 </div>
               </div>
-            ) : null}
+            ) : null} */}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {[...Array(issueCount)].map((_, index) => (
@@ -446,67 +437,6 @@ export default function UploadPage() {
                   : "Upload All Issues"}
               </Button>
             </div>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="metadata">
-          <div className="space-y-6">
-            <h2 className="text-xl font-semibold">Metadata</h2>
-            {selectedVolume && (
-              <Card>
-                <CardContent className="p-6">
-                  <div className="grid gap-4">
-                    <div>
-                      <Label>Volume ID</Label>
-                      <div className="text-sm py-2 px-3 bg-muted rounded-md">
-                        {selectedVolume.id}
-                      </div>
-                    </div>
-                    <div>
-                      <Label>First Issue</Label>
-                      <div className="text-sm py-2 px-3 bg-muted rounded-md">
-                        {selectedVolume.first_issue?.name || "Not available"}
-                      </div>
-                    </div>
-                    <div>
-                      <Label>Last Issue</Label>
-                      <div className="text-sm py-2 px-3 bg-muted rounded-md">
-                        {selectedVolume.last_issue?.name || "Not available"}
-                      </div>
-                    </div>
-                    <div>
-                      <Label>Date Added</Label>
-                      <div className="text-sm py-2 px-3 bg-muted rounded-md">
-                        {new Date(
-                          selectedVolume.date_added
-                        ).toLocaleDateString()}
-                      </div>
-                    </div>
-                    <div>
-                      <Label>Last Updated</Label>
-                      <div className="text-sm py-2 px-3 bg-muted rounded-md">
-                        {new Date(
-                          selectedVolume.date_last_updated
-                        ).toLocaleDateString()}
-                      </div>
-                    </div>
-                    <div>
-                      <Label>Site URL</Label>
-                      <div className="text-sm py-2 px-3 bg-muted rounded-md break-all">
-                        <a
-                          href={selectedVolume.site_detail_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-primary hover:underline"
-                        >
-                          {selectedVolume.site_detail_url}
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
           </div>
         </TabsContent>
       </Tabs>
