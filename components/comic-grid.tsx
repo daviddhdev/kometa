@@ -8,21 +8,22 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useComics } from "@/lib/comic-context";
 import { downloadFile } from "@/lib/utils";
 import { BookOpen, FileArchive } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { toast } from "sonner";
 
 export default function ComicGrid() {
-  const [comics, setComics] = useState<any[]>([]);
+  const { comics, setComics, filteredComics } = useComics();
 
   useEffect(() => {
     fetch("/api/volumes")
       .then((res) => res.json())
       .then(setComics);
-  }, []);
+  }, [setComics]);
 
   const handleDownload = async (volumeId: string, volumeName: string) => {
     try {
@@ -37,12 +38,12 @@ export default function ComicGrid() {
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-6">
-      {comics.length === 0 ? (
+      {filteredComics.length === 0 ? (
         <div className="col-span-full text-center text-muted-foreground">
           No comics found.
         </div>
       ) : (
-        comics.map((comic) => (
+        filteredComics.map((comic) => (
           <Card
             key={comic.id}
             className="overflow-hidden flex flex-col h-full pt-0"
@@ -98,7 +99,9 @@ export default function ComicGrid() {
                       variant="outline"
                       size="sm"
                       className="flex items-center gap-1"
-                      onClick={() => handleDownload(comic.id, comic.name)}
+                      onClick={() =>
+                        handleDownload(comic.id.toString(), comic.name)
+                      }
                     >
                       <FileArchive className="h-3.5 w-3.5" />
                       Download All
