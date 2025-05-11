@@ -1,5 +1,15 @@
 "use client";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,6 +26,7 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Toaster, toast } from "sonner";
 import VolumeInfoCard from "./volume-info-card";
@@ -88,6 +99,8 @@ interface ComicFile {
   title: string;
   summary: string;
   issueNumber?: number;
+  isStored?: boolean;
+  storedIssueId?: string;
 }
 
 function getFileIcon(fileName: string) {
@@ -99,6 +112,7 @@ function getFileIcon(fileName: string) {
 }
 
 export default function UploadPage() {
+  const router = useRouter();
   const [issueCount, setIssueCount] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
@@ -108,6 +122,10 @@ export default function UploadPage() {
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [uploadedIssues, setUploadedIssues] = useState<ComicFile[]>([]);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const [issueToDelete, setIssueToDelete] = useState<{
+    id: string;
+    title: string;
+  } | null>(null);
 
   const debouncedSearch = useCallback((query: string) => {
     setDebouncedSearchQuery(query);
@@ -151,20 +169,21 @@ export default function UploadPage() {
       enabled: debouncedSearchQuery.length > 2,
     });
 
-  // const { data: issueData } = useQuery({
-  //   queryKey: ["getIssueInfo", selectedVolume?.name],
-  //   queryFn: async () => {
-  //     if (!selectedVolume?.name) return null;
-  //     const response = await fetch(
-  //       `/api/issue-info?name=${selectedVolume.name}`
-  //     );
-  //     if (!response.ok) {
-  //       throw new Error("Network response was not ok");
-  //     }
-  //     return response.json();
-  //   },
-  //   enabled: !!selectedVolume?.name,
-  // });
+  // Add query for stored issues
+  const { data: storedIssues } = useQuery({
+    queryKey: ["getStoredIssues", selectedVolume?.id],
+    queryFn: async () => {
+      if (!selectedVolume?.id) return null;
+      const response = await fetch(
+        `/api/volume-issues?volumeId=${selectedVolume.id}`
+      );
+      if (!response.ok) {
+        throw new Error("Failed to fetch stored issues");
+      }
+      return response.json();
+    },
+    enabled: !!selectedVolume?.id,
+  });
 
   useEffect(() => {
     if (selectedVolume) {
@@ -172,15 +191,39 @@ export default function UploadPage() {
     }
   }, [selectedVolume]);
 
+  // Update useEffect to handle stored issues
+  useEffect(() => {
+    if (storedIssues && storedIssues.length > 0) {
+      // Set issue count to the number of stored issues
+      setIssueCount(storedIssues.length);
+
+      // Create ComicFile objects for stored issues
+      const existingIssues = storedIssues.map((issue: any) => ({
+        title: issue.title || `Issue ${issue.issue_number}`,
+        summary: issue.summary || "",
+        issueNumber: issue.issue_number,
+        isStored: true,
+        storedIssueId: issue.id,
+      }));
+
+      setUploadedIssues(existingIssues);
+    }
+  }, [storedIssues]);
+
   const addIssue = () => {
     setIssueCount(issueCount + 1);
   };
 
+  // Update handleVolumeSelect to handle stored issues
   const handleVolumeSelect = (volume: ComicVineVolume) => {
     console.log("Selecting volume:", volume);
     setSelectedVolume(volume);
     setShowSearchResults(false);
     setSearchQuery(volume.name);
+
+    // Reset uploaded issues when selecting a new volume
+    setUploadedIssues([]);
+    setIssueCount(1);
   };
 
   const handleIssueUpload = async (
@@ -226,6 +269,32 @@ export default function UploadPage() {
     setIssueCount((count) => Math.max(1, count - 1));
   };
 
+  const handleDeleteIssue = async (issueId: string) => {
+    try {
+      const response = await fetch(`/api/delete-issue?issueId=${issueId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete issue");
+      }
+
+      // Remove the issue from the UI
+      setUploadedIssues((prev) =>
+        prev.filter((issue) => issue.storedIssueId !== issueId)
+      );
+      setIssueCount((count) => Math.max(1, count - 1));
+      toast.success("Issue deleted successfully");
+    } catch (error) {
+      console.error("Error deleting issue:", error);
+      toast.error(
+        `Failed to delete issue: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
+    }
+  };
+
   const handleSubmit = async () => {
     console.log("Current selectedVolume:", selectedVolume);
 
@@ -239,6 +308,8 @@ export default function UploadPage() {
       alert("Please upload at least one issue");
       return;
     }
+
+    let hasError = false;
 
     // Create FormData for each issue
     for (let i = 0; i < uploadedIssues.length; i++) {
@@ -264,7 +335,6 @@ export default function UploadPage() {
             image: selectedVolume.image?.original_url,
             site_detail_url: selectedVolume.site_detail_url,
           },
-          // You can add more fields here if needed
         })
       );
 
@@ -281,6 +351,7 @@ export default function UploadPage() {
               errorData.error || "Failed to upload issue"
             }`
           );
+          hasError = true;
           throw new Error(errorData.error || "Failed to upload issue");
         }
         toast.success(`Issue ${i + 1} uploaded successfully!`);
@@ -291,7 +362,13 @@ export default function UploadPage() {
             error instanceof Error ? error.message : "Unknown error"
           }`
         );
+        hasError = true;
       }
+    }
+
+    if (!hasError) {
+      // Redirect to the volume page
+      router.push(`/comics/${selectedVolume.id}`);
     }
   };
 
@@ -352,14 +429,14 @@ export default function UploadPage() {
               </Button>
             </div>
 
-            {/* {issueCount === 0 || uploadedIssues.length === 0 ? (
+            {issueCount === 0 || uploadedIssues.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                 <FileArchive className="w-12 h-12 mb-2" />
                 <div>
                   No issues uploaded yet. Click &quot;Add Issue&quot; to begin.
                 </div>
               </div>
-            ) : null} */}
+            ) : null}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {[...Array(issueCount)].map((_, index) => (
@@ -372,50 +449,49 @@ export default function UploadPage() {
                       <div className="flex-shrink-0">
                         {uploadedIssues[index]?.file ? (
                           getFileIcon(uploadedIssues[index].file.name)
+                        ) : uploadedIssues[index]?.isStored ? (
+                          <FileArchive className="w-8 h-8 text-muted-foreground" />
                         ) : (
                           <FileImage className="w-8 h-8 text-muted-foreground" />
                         )}
                       </div>
                       <div className="flex-1">
                         <Label>Issue {index + 1}</Label>
-                        <Input
-                          type="file"
-                          accept=".cbz,.cbr,.pdf"
-                          onChange={(e) => handleIssueUpload(e, index)}
-                          className="mt-2"
-                        />
-                        {uploadedIssues[index]?.file && (
+                        {uploadedIssues[index]?.isStored ? (
                           <div className="mt-2 text-sm text-muted-foreground">
-                            <div>
-                              <span className="font-medium">File:</span>{" "}
-                              {uploadedIssues[index].file.name}
-                            </div>
-                            <div>
-                              <span className="font-medium">Size:</span>{" "}
-                              {Math.round(
-                                uploadedIssues[index].file.size / 1024
-                              )}{" "}
-                              KB
-                            </div>
-                            {uploadedIssues[index].issueNumber && (
-                              <div>
-                                <span className="font-medium">Issue #:</span>{" "}
-                                {uploadedIssues[index].issueNumber}
-                              </div>
-                            )}
+                            {uploadedIssues[index].title}
                           </div>
+                        ) : (
+                          <Input
+                            type="file"
+                            accept=".cbz,.cbr,.pdf"
+                            onChange={(e) => handleIssueUpload(e, index)}
+                            className="mt-2"
+                          />
                         )}
                       </div>
-                      {uploadedIssues[index]?.file && (
+                      {uploadedIssues[index]?.isStored ? (
                         <Button
-                          type="button"
                           variant="ghost"
                           size="icon"
+                          onClick={() =>
+                            setIssueToDelete({
+                              id: uploadedIssues[index].storedIssueId!,
+                              title: uploadedIssues[index].title,
+                            })
+                          }
                           className="absolute top-2 right-2"
-                          onClick={() => removeIssue(index)}
-                          aria-label="Remove issue"
                         >
-                          <X className="w-5 h-5" />
+                          <X className="h-4 w-4" />
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeIssue(index)}
+                          className="absolute top-2 right-2"
+                        >
+                          <X className="h-4 w-4" />
                         </Button>
                       )}
                     </div>
@@ -440,6 +516,35 @@ export default function UploadPage() {
           </div>
         </TabsContent>
       </Tabs>
+
+      <AlertDialog
+        open={!!issueToDelete}
+        onOpenChange={() => setIssueToDelete(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Issue</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {issueToDelete?.title}? This
+              action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (issueToDelete) {
+                  handleDeleteIssue(issueToDelete.id);
+                  setIssueToDelete(null);
+                }
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

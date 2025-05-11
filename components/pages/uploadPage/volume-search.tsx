@@ -4,7 +4,8 @@ import {
 } from "@/components/pages/uploadPage/types";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Search } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { CheckCircle2, Loader2, Search } from "lucide-react";
 import Image from "next/image";
 
 interface VolumeSearchProps {
@@ -30,6 +31,31 @@ export default function VolumeSearch({
   isSearching,
   searchError,
 }: VolumeSearchProps) {
+  // Query to check if volumes exist in database
+  const { data: existingVolumes } = useQuery({
+    queryKey: [
+      "checkExistingVolumes",
+      searchResults?.results?.map((v) => v.id),
+    ],
+    queryFn: async () => {
+      if (!searchResults?.results?.length) return {};
+
+      const volumeChecks = await Promise.all(
+        searchResults.results.map(async (volume) => {
+          const response = await fetch(
+            `/api/volume-exists?volumeId=${volume.id}`
+          );
+          if (!response.ok) return { [volume.id]: false };
+          const data = await response.json();
+          return { [volume.id]: data.exists };
+        })
+      );
+
+      return volumeChecks.reduce((acc, curr) => ({ ...acc, ...curr }), {});
+    },
+    enabled: !!searchResults?.results?.length,
+  });
+
   return (
     <div className="grid gap-2">
       <Label>Search Comic Volume</Label>
@@ -58,7 +84,9 @@ export default function VolumeSearch({
               searchResults.results.map((result) => (
                 <div
                   key={result.id}
-                  className="p-2 hover:bg-accent cursor-pointer flex items-center gap-3"
+                  className={`p-2 hover:bg-accent cursor-pointer flex items-center gap-3 ${
+                    existingVolumes?.[result.id] ? "bg-muted/50" : ""
+                  }`}
                   onClick={() => handleVolumeSelect(result)}
                 >
                   <div className="relative w-12 h-16 flex-shrink-0">
@@ -69,8 +97,13 @@ export default function VolumeSearch({
                       className="object-cover rounded"
                     />
                   </div>
-                  <div>
-                    <div className="font-medium">{result.name}</div>
+                  <div className="flex-1">
+                    <div className="font-medium flex items-center gap-2">
+                      {result.name}
+                      {existingVolumes?.[result.id] && (
+                        <CheckCircle2 className="h-4 w-4 text-green-500" />
+                      )}
+                    </div>
                     <div className="text-sm text-muted-foreground">
                       {result.publisher?.name}
                       {typeof result.count_of_issues === "number" && (
@@ -80,6 +113,7 @@ export default function VolumeSearch({
                           {result.count_of_issues !== 1 ? "s" : ""}
                         </>
                       )}
+                      <> &middot; {result.start_year}</>
                     </div>
                   </div>
                 </div>
