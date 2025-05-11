@@ -21,6 +21,13 @@ export interface ErrorResponse {
   error: string;
 }
 
+export interface RateLimitError {
+  error: string;
+  status: number;
+  message: string;
+  resetTime?: string;
+}
+
 // Comic Vine Types
 export interface ComicVineImage {
   icon_url: string;

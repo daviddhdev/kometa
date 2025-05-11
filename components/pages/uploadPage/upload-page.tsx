@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { isRateLimitError } from "@/lib/comicvine-utils";
 import { ComicFile, ComicVineResponse, ComicVineVolume } from "@/types";
 import { useQuery } from "@tanstack/react-query";
 import debounce from "lodash/debounce";
@@ -136,15 +137,23 @@ export default function UploadPage() {
           const response = await fetch(
             `/api/volume-info?name=${debouncedSearchQuery}`
           );
+          const data = await response.json();
+
+          if (isRateLimitError(data)) {
+            setSearchError(data.message);
+            throw new Error(data.message);
+          }
+
           if (!response.ok) {
             throw new Error("Failed to fetch volume info");
           }
+
           setSearchError(null);
-          return response.json();
+          return data;
         } catch (error) {
-          setSearchError(
-            error instanceof Error ? error.message : "An error occurred"
-          );
+          const errorMessage =
+            error instanceof Error ? error.message : "An error occurred";
+          setSearchError(errorMessage);
           throw error;
         }
       },

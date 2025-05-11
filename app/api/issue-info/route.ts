@@ -1,9 +1,12 @@
-import { ComicVineResponse, ErrorResponse } from "@/types";
+import { handleComicVineResponse } from "@/lib/comicvine-utils";
+import { ComicVineResponse, ErrorResponse, RateLimitError } from "@/types";
 import { NextResponse } from "next/server";
 
 export const GET = async (
   req: Request
-): Promise<NextResponse<ComicVineResponse | ErrorResponse>> => {
+): Promise<
+  NextResponse<ComicVineResponse | ErrorResponse | RateLimitError>
+> => {
   const { searchParams } = new URL(req.url);
   const issueName = searchParams.get("name");
   const issueNumber = searchParams.get("issue");
@@ -31,13 +34,12 @@ export const GET = async (
     },
   });
 
-  if (!res.ok) {
-    return NextResponse.json(
-      { error: "Failed to fetch from Comic Vine" },
-      { status: 500 }
-    );
+  const { error, data } = handleComicVineResponse(res);
+
+  if (error) {
+    return NextResponse.json(error, { status: error.status });
   }
 
-  const data = await res.json();
-  return NextResponse.json(data);
+  const responseData = await data.json();
+  return NextResponse.json(responseData);
 };
