@@ -105,7 +105,7 @@ export const ComicDetailsPage = ({
 
             <div className="mt-6">
               <h2 className="text-xl font-semibold mb-2">Description</h2>
-              <div className="text-muted-foreground prose prose-sm max-w-none">
+              <div className="text-muted-foreground prose prose-sm max-w-none max-h-[400px] overflow-y-auto">
                 {volume.description
                   ? parse(volume.description)
                   : "No description available"}
@@ -136,19 +136,14 @@ export const ComicDetailsPage = ({
               <TabsContent value="details" className="mt-4">
                 <ComicMetadata
                   metadata={{
-                    format: "Comic Book",
-                    language: "English",
-                    pages: 0,
-                    ageRating: "Not Rated",
-                    colorist: "Unknown",
-                    letterer: "Unknown",
-                    editor: "Unknown",
-                    releaseDate: volume.start_year?.toString() || "Unknown",
-                    isbn: "Unknown",
                     publisher: volume.publisher || "Unknown",
                     startYear: volume.start_year || "Unknown",
                     totalIssues: volume.count_of_issues || "Unknown",
                     siteDetailUrl: volume.site_detail_url || "Unknown",
+                    aliases: volume.aliases || "None",
+                    deck: volume.deck || "No summary available",
+                    dateAdded: volume.date_added || "Unknown",
+                    dateLastUpdated: volume.date_last_updated || "Unknown",
                   }}
                 />
               </TabsContent>

@@ -322,6 +322,10 @@ export default function UploadPage() {
             description: selectedVolume.description,
             image: selectedVolume.image?.original_url,
             site_detail_url: selectedVolume.site_detail_url,
+            aliases: selectedVolume.aliases,
+            deck: selectedVolume.deck,
+            date_added: selectedVolume.date_added,
+            date_last_updated: selectedVolume.date_last_updated,
           },
         })
       );

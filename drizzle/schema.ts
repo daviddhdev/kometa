@@ -17,6 +17,10 @@ export const volumes = pgTable("volumes", {
   description: text("description"),
   image: varchar("image", { length: 512 }),
   site_detail_url: varchar("site_detail_url", { length: 512 }),
+  aliases: text("aliases"),
+  deck: text("deck"),
+  date_added: varchar("date_added", { length: 100 }),
+  date_last_updated: varchar("date_last_updated", { length: 100 }),
 });
 
 export const issues = pgTable(

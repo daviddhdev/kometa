@@ -1,4 +1,4 @@
-import { ComicDetailsPage } from "@/components/pages/comicDetailsPage/comic-details-page";
+import { ComicDetailsWrapper } from "@/components/pages/comicDetailsPage/comic-details-wrapper";
 import { notFound } from "next/navigation";
 
 async function getVolumeData(id: string) {
@@ -26,5 +26,5 @@ export default async function ComicDetailPage({
 }) {
   const { id } = await params;
   const { volume, issues } = await getVolumeData(id);
-  return <ComicDetailsPage volume={volume} issues={issues} />;
+  return <ComicDetailsWrapper volume={volume} issues={issues} />;
 }

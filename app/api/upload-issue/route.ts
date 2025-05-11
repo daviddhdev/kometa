@@ -76,6 +76,10 @@ export async function POST(
           description: vol.description,
           image: vol.image,
           site_detail_url: vol.site_detail_url,
+          aliases: vol.aliases,
+          deck: vol.deck,
+          date_added: vol.date_added,
+          date_last_updated: vol.date_last_updated,
         });
       } else {
         // Optionally update missing fields
@@ -89,6 +93,11 @@ export async function POST(
             description: existing.description || vol.description,
             image: existing.image || vol.image,
             site_detail_url: existing.site_detail_url || vol.site_detail_url,
+            aliases: existing.aliases || vol.aliases,
+            deck: existing.deck || vol.deck,
+            date_added: existing.date_added || vol.date_added,
+            date_last_updated:
+              existing.date_last_updated || vol.date_last_updated,
           })
           .where(eq(volumes.id, Number(vol.id)));
       }

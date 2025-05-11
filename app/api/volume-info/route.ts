@@ -13,9 +13,9 @@ export const GET = async (
 
   const apiKey = process.env.COMIC_VINE_API_KEY;
   const baseUrl = "https://comicvine.gamespot.com/api";
-  const url = `${baseUrl}/search/?api_key=${apiKey}&format=json&query=${encodeURIComponent(
+  const url = `${baseUrl}/volumes/?api_key=${apiKey}&format=json&filter=name:${encodeURIComponent(
     volumeName
-  )}&resources=volume&field_list=name,deck,description,first_issue,last_issue,count_of_issues,image,publisher,id,start_year,person_credits,character_credits,location_credits,team_credits,story_arc_credits,concept_credits,location_credits,team_credits,story_arc_credits,concept_credits`;
+  )}&field_list=name,deck,description,first_issue,last_issue,count_of_issues,image,publisher,id,start_year,person_credits,character_credits,location_credits,team_credits,story_arc_credits,concept_credits,aliases,date_added,date_last_updated`;
 
   const res = await fetch(url, {
     headers: {
