@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { FileArchive, PlusCircle } from "lucide-react";
 import React from "react";
-import IssueCard, { ComicFile } from "./IssueCard";
+import IssueCard, { ComicFile } from "./issue-card";
 import { ComicVineVolume } from "./types";
 
 interface IssueUploaderProps {

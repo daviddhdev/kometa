@@ -18,8 +18,8 @@ import {
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Toaster, toast } from "sonner";
-import VolumeInfoCard from "./VolumeInfoCard";
-import VolumeSearch from "./VolumeSearch";
+import VolumeInfoCard from "./volume-info-card";
+import VolumeSearch from "./volume-search";
 
 interface ComicVineImage {
   icon_url: string;

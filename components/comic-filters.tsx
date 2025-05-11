@@ -36,7 +36,7 @@ export default function ComicFilters() {
 
         <div className="flex flex-wrap gap-3">
           <Select value={sortOrder} onValueChange={setSortOrder}>
-            <SelectTrigger className="w-[140px] bg-background">
+            <SelectTrigger className="w-[180px] bg-background">
               <div className="flex items-center gap-2">
                 {sortOrder === "newest" ? (
                   <SortDesc className="h-4 w-4" />

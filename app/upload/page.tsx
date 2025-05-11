@@ -1,5 +1,5 @@
 "use client";
-import UploadPage from "@/components/pages/uploadPage/UploadPage";
+import UploadPage from "@/components/pages/uploadPage/upload-page";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 const queryClient = new QueryClient();
