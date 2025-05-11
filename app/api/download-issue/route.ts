@@ -1,10 +1,13 @@
 import { issues } from "@/drizzle/schema";
 import { db } from "@/lib/db";
+import { ErrorResponse } from "@/types";
 import { eq } from "drizzle-orm";
 import { createReadStream } from "fs";
 import { NextResponse } from "next/server";
 
-export async function GET(req: Request) {
+export async function GET(
+  req: Request
+): Promise<NextResponse<ReadableStream | ErrorResponse>> {
   try {
     const { searchParams } = new URL(req.url);
     const issueId = searchParams.get("issueId");

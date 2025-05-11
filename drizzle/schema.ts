@@ -4,6 +4,7 @@ import {
   serial,
   text,
   timestamp,
+  unique,
   varchar,
 } from "drizzle-orm/pg-core";
 
@@ -18,12 +19,18 @@ export const volumes = pgTable("volumes", {
   site_detail_url: varchar("site_detail_url", { length: 512 }),
 });
 
-export const issues = pgTable("issues", {
-  id: serial("id").primaryKey(),
-  volume_id: integer("volume_id").references(() => volumes.id),
-  issue_number: integer("issue_number"),
-  title: varchar("title", { length: 255 }),
-  summary: text("summary"),
-  file_path: varchar("file_path", { length: 512 }),
-  uploaded_at: timestamp("uploaded_at", { withTimezone: true }).defaultNow(),
-});
+export const issues = pgTable(
+  "issues",
+  {
+    id: serial("id").primaryKey(),
+    volume_id: integer("volume_id").references(() => volumes.id),
+    issue_number: integer("issue_number").notNull(),
+    title: varchar("title", { length: 255 }),
+    summary: text("summary"),
+    file_path: varchar("file_path", { length: 512 }),
+    uploaded_at: timestamp("uploaded_at", { withTimezone: true }).defaultNow(),
+  },
+  (table) => ({
+    volumeIssueUnique: unique().on(table.volume_id, table.issue_number),
+  })
+);

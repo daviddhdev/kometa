@@ -1,10 +1,13 @@
 import { issues } from "@/drizzle/schema";
 import { db } from "@/lib/db";
+import { ErrorResponse } from "@/types";
 import { eq } from "drizzle-orm";
 import { unlink } from "fs/promises";
 import { NextResponse } from "next/server";
 
-export async function DELETE(req: Request) {
+export async function DELETE(
+  req: Request
+): Promise<NextResponse<{ success: boolean } | ErrorResponse>> {
   try {
     const { searchParams } = new URL(req.url);
     const issueId = searchParams.get("issueId");

@@ -1,12 +1,13 @@
 import { issues, volumes } from "@/drizzle/schema";
 import { db } from "@/lib/db";
+import { ErrorResponse, VolumeResponse } from "@/types";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
-) {
+): Promise<NextResponse<VolumeResponse | ErrorResponse>> {
   try {
     const volumeId = (await params).id;
 

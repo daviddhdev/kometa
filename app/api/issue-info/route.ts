@@ -1,10 +1,15 @@
-export const GET = async (req: Request) => {
+import { ComicVineResponse, ErrorResponse } from "@/types";
+import { NextResponse } from "next/server";
+
+export const GET = async (
+  req: Request
+): Promise<NextResponse<ComicVineResponse | ErrorResponse>> => {
   const { searchParams } = new URL(req.url);
   const issueName = searchParams.get("name");
   const issueNumber = searchParams.get("issue");
 
   if (!issueName) {
-    return Response.json({ error: "Missing issue name" }, { status: 400 });
+    return NextResponse.json({ error: "Missing issue name" }, { status: 400 });
   }
 
   const apiKey = process.env.COMIC_VINE_API_KEY;
@@ -27,12 +32,12 @@ export const GET = async (req: Request) => {
   });
 
   if (!res.ok) {
-    return Response.json(
+    return NextResponse.json(
       { error: "Failed to fetch from Comic Vine" },
       { status: 500 }
     );
   }
 
   const data = await res.json();
-  return Response.json(data);
+  return NextResponse.json(data);
 };

@@ -4,8 +4,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { downloadFile } from "@/lib/utils";
+import { useQuery } from "@tanstack/react-query";
 import { Download, Eye, EyeOff } from "lucide-react";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 interface Issue {
@@ -20,15 +21,55 @@ interface ComicIssuesProps {
   comicId: string;
 }
 
-export default function ComicIssues({ issues, comicId }: ComicIssuesProps) {
-  const [comicIssues, setComicIssues] = useState(issues);
+export default function ComicIssues({
+  issues: initialIssues,
+  comicId,
+}: ComicIssuesProps) {
+  const router = useRouter();
 
-  const toggleReadStatus = (issueId: string) => {
-    setComicIssues(
-      comicIssues.map((issue) =>
-        issue.id === issueId ? { ...issue, isRead: !issue.isRead } : issue
-      )
-    );
+  const { data: issues = initialIssues } = useQuery({
+    queryKey: ["volumeIssues", comicId],
+    queryFn: async () => {
+      const response = await fetch(`/api/volume-issues?volumeId=${comicId}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch issues");
+      }
+      const data = await response.json();
+      return data.map(
+        (issue: {
+          id: string;
+          issue_number: number;
+          title: string;
+          is_read: boolean;
+        }) => ({
+          id: issue.id,
+          number: issue.issue_number,
+          title: issue.title,
+          isRead: issue.is_read,
+        })
+      );
+    },
+    initialData: initialIssues,
+  });
+
+  const toggleReadStatus = async (issueId: string) => {
+    try {
+      const response = await fetch(
+        `/api/toggle-read-status?issueId=${issueId}`,
+        {
+          method: "POST",
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to toggle read status");
+      }
+
+      // Invalidate the query to refetch the data
+      router.refresh();
+    } catch (error) {
+      toast.error("Failed to update read status");
+    }
   };
 
   const handleDownload = async (issueId: string, issueTitle: string) => {
@@ -41,7 +82,7 @@ export default function ComicIssues({ issues, comicId }: ComicIssuesProps) {
 
   return (
     <div className="space-y-4">
-      {comicIssues.map((issue) => (
+      {issues.map((issue: Issue) => (
         <Card key={issue.id} className="overflow-hidden">
           <CardContent className="p-0">
             <div className="flex items-center justify-between p-4">

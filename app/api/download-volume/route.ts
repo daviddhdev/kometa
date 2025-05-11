@@ -7,7 +7,7 @@ import { mkdir, rm } from "fs/promises";
 import { NextResponse } from "next/server";
 import path from "path";
 
-export async function GET(req: Request) {
+export async function GET(req: Request): Promise<NextResponse<unknown>> {
   try {
     const { searchParams } = new URL(req.url);
     const volumeId = searchParams.get("volumeId");

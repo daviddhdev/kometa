@@ -1,11 +1,14 @@
 import { issues, volumes } from "@/drizzle/schema";
 import { db } from "@/lib/db";
+import { ErrorResponse, Issue } from "@/types";
 import { eq } from "drizzle-orm";
 import { mkdir, writeFile } from "fs/promises";
 import { NextResponse } from "next/server";
 import path from "path";
 
-export async function POST(req: Request) {
+export async function POST(
+  req: Request
+): Promise<NextResponse<{ issue: Issue } | ErrorResponse>> {
   try {
     const formData = await req.formData();
     const file = formData.get("file") as File;
@@ -92,7 +95,7 @@ export async function POST(req: Request) {
     }
 
     // Insert issue in the database
-    const inserted = await db
+    const [inserted] = await db
       .insert(issues)
       .values({
         volume_id: Number(volumeId),
@@ -116,15 +119,11 @@ export async function POST(req: Request) {
       })
     );
 
-    return NextResponse.json({
-      success: true,
-      path: filePath,
-      db: inserted[0],
-    });
+    return NextResponse.json({ issue: inserted });
   } catch (error) {
-    console.error("Error uploading file:", error);
+    console.error("Error uploading issue:", error);
     return NextResponse.json(
-      { error: "Error uploading file" },
+      { error: "Failed to upload issue" },
       { status: 500 }
     );
   }

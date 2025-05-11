@@ -1,9 +1,12 @@
 import { volumes } from "@/drizzle/schema";
 import { db } from "@/lib/db";
+import { ErrorResponse, VolumeExistsResponse } from "@/types";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
-export async function GET(req: Request) {
+export async function GET(
+  req: Request
+): Promise<NextResponse<VolumeExistsResponse | ErrorResponse>> {
   try {
     const { searchParams } = new URL(req.url);
     const volumeId = searchParams.get("volumeId");

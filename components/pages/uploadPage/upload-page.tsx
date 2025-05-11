@@ -14,7 +14,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ComicFile, ComicVineResponse, ComicVineVolume } from "@/types";
 import { useQuery } from "@tanstack/react-query";
 import debounce from "lodash/debounce";
 import {
@@ -59,50 +67,6 @@ interface ComicVineIssue {
   site_detail_url: string;
 }
 
-interface ComicVineVolume {
-  aliases: string | null;
-  api_detail_url: string;
-  character_credits: any[];
-  concept_credits: any[];
-  count_of_issues: number;
-  date_added: string;
-  date_last_updated: string;
-  deck: string | null;
-  description: string | null;
-  first_issue: ComicVineIssue;
-  id: number;
-  image: ComicVineImage;
-  last_issue: ComicVineIssue;
-  location_credits: any[];
-  name: string;
-  object_credits: any[];
-  person_credits: any[];
-  publisher: ComicVinePublisher;
-  site_detail_url: string;
-  start_year: number;
-  team_credits: any[];
-}
-
-interface ComicVineResponse {
-  error: string;
-  limit: number;
-  offset: number;
-  number_of_page_results: number;
-  number_of_total_results: number;
-  status_code: number;
-  results: ComicVineVolume[];
-  version: string;
-}
-
-interface ComicFile {
-  file: File;
-  title: string;
-  summary: string;
-  issueNumber?: number;
-  isStored?: boolean;
-  storedIssueId?: string;
-}
-
 function getFileIcon(fileName: string) {
   if (fileName.endsWith(".pdf"))
     return <FileText className="w-8 h-8 text-red-500" />;
@@ -123,9 +87,10 @@ export default function UploadPage() {
   const [uploadedIssues, setUploadedIssues] = useState<ComicFile[]>([]);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [issueToDelete, setIssueToDelete] = useState<{
-    id: string;
+    id: number;
     title: string;
   } | null>(null);
+  const [isUpdatingIssue, setIsUpdatingIssue] = useState(false);
 
   const debouncedSearch = useCallback((query: string) => {
     setDebouncedSearchQuery(query);
@@ -138,12 +103,29 @@ export default function UploadPage() {
 
   // Update debounced search when searchQuery changes
   useEffect(() => {
-    if (searchQuery.length > 2) {
+    if (searchQuery.length > 2 && !selectedVolume) {
       debouncedSearchFn(searchQuery);
+      setShowSearchResults(true);
     } else {
       setDebouncedSearchQuery("");
+      setShowSearchResults(false);
     }
-  }, [searchQuery, debouncedSearchFn]);
+  }, [searchQuery, debouncedSearchFn, selectedVolume]);
+
+  // Add effect to hide search results when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest(".volume-search")) {
+        setShowSearchResults(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   const { data: searchResults, isLoading: isSearching } =
     useQuery<ComicVineResponse>({
@@ -211,7 +193,14 @@ export default function UploadPage() {
   }, [storedIssues]);
 
   const addIssue = () => {
-    setIssueCount(issueCount + 1);
+    setUploadedIssues((prev) => [
+      ...prev,
+      {
+        title: "",
+        summary: "",
+        isStored: false,
+      },
+    ]);
   };
 
   // Update handleVolumeSelect to handle stored issues
@@ -269,7 +258,7 @@ export default function UploadPage() {
     setIssueCount((count) => Math.max(1, count - 1));
   };
 
-  const handleDeleteIssue = async (issueId: string) => {
+  const handleDeleteIssue = async (issueId: number) => {
     try {
       const response = await fetch(`/api/delete-issue?issueId=${issueId}`, {
         method: "DELETE",
@@ -279,19 +268,18 @@ export default function UploadPage() {
         throw new Error("Failed to delete issue");
       }
 
-      // Remove the issue from the UI
+      // Remove the issue from the uploaded issues array
       setUploadedIssues((prev) =>
-        prev.filter((issue) => issue.storedIssueId !== issueId)
+        prev.filter(
+          (issue) =>
+            issue.storedIssueId === undefined || issue.storedIssueId !== issueId
+        )
       );
-      setIssueCount((count) => Math.max(1, count - 1));
+
       toast.success("Issue deleted successfully");
     } catch (error) {
       console.error("Error deleting issue:", error);
-      toast.error(
-        `Failed to delete issue: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
+      toast.error("Failed to delete issue");
     }
   };
 
@@ -372,6 +360,47 @@ export default function UploadPage() {
     }
   };
 
+  const handleIssueNumberChange = async (
+    issueId: number,
+    newIssueNumber: number
+  ) => {
+    if (!selectedVolume) return;
+
+    setIsUpdatingIssue(true);
+    try {
+      const response = await fetch(`/api/update-issue`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          issueId,
+          issueNumber: newIssueNumber,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update issue number");
+      }
+
+      // Update local state
+      setUploadedIssues((prev) =>
+        prev.map((issue) =>
+          issue.storedIssueId === issueId
+            ? { ...issue, issueNumber: newIssueNumber }
+            : issue
+        )
+      );
+
+      toast.success("Issue number updated successfully");
+    } catch (error) {
+      console.error("Error updating issue number:", error);
+      toast.error("Failed to update issue number");
+    } finally {
+      setIsUpdatingIssue(false);
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-6">
       <Toaster />
@@ -429,37 +458,66 @@ export default function UploadPage() {
               </Button>
             </div>
 
-            {issueCount === 0 || uploadedIssues.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-                <FileArchive className="w-12 h-12 mb-2" />
-                <div>
-                  No issues uploaded yet. Click &quot;Add Issue&quot; to begin.
-                </div>
-              </div>
-            ) : null}
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {[...Array(issueCount)].map((_, index) => (
+              {uploadedIssues.map((issue, index) => (
                 <Card
-                  key={`issue-${index}`}
+                  key={`issue-${issue.storedIssueId || index}`}
                   className="relative border-2 border-muted-foreground/10 shadow-sm"
                 >
                   <CardContent className="flex flex-col gap-4 p-6">
                     <div className="flex items-center gap-4">
                       <div className="flex-shrink-0">
-                        {uploadedIssues[index]?.file ? (
-                          getFileIcon(uploadedIssues[index].file.name)
-                        ) : uploadedIssues[index]?.isStored ? (
+                        {issue.file ? (
+                          getFileIcon(issue.file.name)
+                        ) : issue.isStored ? (
                           <FileArchive className="w-8 h-8 text-muted-foreground" />
                         ) : (
                           <FileImage className="w-8 h-8 text-muted-foreground" />
                         )}
                       </div>
                       <div className="flex-1">
-                        <Label>Issue {index + 1}</Label>
-                        {uploadedIssues[index]?.isStored ? (
+                        <div className="flex items-center gap-2">
+                          <Label>Issue</Label>
+                          <Select
+                            value={issue.issueNumber?.toString()}
+                            onValueChange={(value) => {
+                              if (issue.isStored) {
+                                handleIssueNumberChange(
+                                  issue.storedIssueId!,
+                                  parseInt(value)
+                                );
+                              } else {
+                                setUploadedIssues((prev) =>
+                                  prev.map((iss, idx) =>
+                                    idx === index
+                                      ? { ...iss, issueNumber: parseInt(value) }
+                                      : iss
+                                  )
+                                );
+                              }
+                            }}
+                            disabled={isUpdatingIssue && issue.isStored}
+                          >
+                            <SelectTrigger className="w-24">
+                              <SelectValue placeholder="Select" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {[
+                                ...Array(selectedVolume?.count_of_issues || 1),
+                              ].map((_, i) => (
+                                <SelectItem
+                                  key={i + 1}
+                                  value={(i + 1).toString()}
+                                >
+                                  {i + 1}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        {issue.isStored ? (
                           <div className="mt-2 text-sm text-muted-foreground">
-                            {uploadedIssues[index].title}
+                            {issue.title}
                           </div>
                         ) : (
                           <Input
@@ -470,14 +528,14 @@ export default function UploadPage() {
                           />
                         )}
                       </div>
-                      {uploadedIssues[index]?.isStored ? (
+                      {issue.isStored ? (
                         <Button
                           variant="ghost"
                           size="icon"
                           onClick={() =>
                             setIssueToDelete({
-                              id: uploadedIssues[index].storedIssueId!,
-                              title: uploadedIssues[index].title,
+                              id: issue.storedIssueId!,
+                              title: issue.title,
                             })
                           }
                           className="absolute top-2 right-2"

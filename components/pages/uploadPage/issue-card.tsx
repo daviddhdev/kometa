@@ -2,15 +2,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ComicFile } from "@/types";
 import { FileArchive, FileImage, FileText, X } from "lucide-react";
 import React from "react";
-
-export interface ComicFile {
-  file: File;
-  title: string;
-  summary: string;
-  issueNumber?: number;
-}
 
 function getFileIcon(fileName: string) {
   if (fileName.endsWith(".pdf"))
@@ -22,17 +16,58 @@ function getFileIcon(fileName: string) {
 
 interface IssueCardProps {
   index: number;
-  issue?: ComicFile;
-  onFileChange: (e: React.ChangeEvent<HTMLInputElement>, index: number) => void;
-  onRemove: (index: number) => void;
+  uploadedIssues: ComicFile[];
+  setUploadedIssues: React.Dispatch<React.SetStateAction<ComicFile[]>>;
+  volumeName: string;
 }
 
 export default function IssueCard({
   index,
-  issue,
-  onFileChange,
-  onRemove,
+  uploadedIssues,
+  setUploadedIssues,
+  volumeName,
 }: IssueCardProps) {
+  const issue = uploadedIssues[index];
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Check if file is a comic format
+    const validFormats = [".cbz", ".cbr", ".pdf"];
+    const fileExtension = file.name
+      .toLowerCase()
+      .slice(file.name.lastIndexOf("."));
+    if (!validFormats.includes(fileExtension)) {
+      alert("Please upload a valid comic file (.cbz, .cbr, or .pdf)");
+      return;
+    }
+
+    // Create a new issue object
+    const newIssue: ComicFile = {
+      file,
+      title: file.name,
+      summary: "",
+    };
+
+    // Try to extract issue number from filename
+    const issueMatch = file.name.match(/(?:issue|#)?\s*(\d+)/i);
+    if (issueMatch) {
+      newIssue.issueNumber = parseInt(issueMatch[1]);
+    }
+
+    // Update the uploaded issues array
+    setUploadedIssues((prev) => {
+      const newIssues = [...prev];
+      newIssues[index] = newIssue;
+      return newIssues;
+    });
+  };
+
+  const handleRemove = () => {
+    setUploadedIssues((prev) => prev.filter((_, i) => i !== index));
+  };
+
   return (
     <Card className="relative border-2 border-muted-foreground/10 shadow-sm">
       <CardContent className="flex flex-col gap-4 p-6">
@@ -49,7 +84,7 @@ export default function IssueCard({
             <Input
               type="file"
               accept=".cbz,.cbr,.pdf"
-              onChange={(e) => onFileChange(e, index)}
+              onChange={handleFileChange}
               className="mt-2"
             />
             {issue?.file && (
@@ -76,7 +111,7 @@ export default function IssueCard({
               variant="ghost"
               size="icon"
               className="absolute top-2 right-2"
-              onClick={() => onRemove(index)}
+              onClick={handleRemove}
               aria-label="Remove issue"
             >
               <X className="w-5 h-5" />
