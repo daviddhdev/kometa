@@ -41,3 +41,14 @@ export const issues = pgTable(
     volumeIssueUnique: unique().on(table.volume_id, table.issue_number),
   })
 );
+
+export const reading_progress = pgTable("reading_progress", {
+  id: serial("id").primaryKey(),
+  issue_id: integer("issue_id")
+    .references(() => issues.id)
+    .notNull(),
+  current_page: integer("current_page").default(1),
+  total_pages: integer("total_pages").notNull(),
+  last_read_at: timestamp("last_read_at", { withTimezone: true }).defaultNow(),
+  is_completed: boolean("is_completed").default(false),
+});

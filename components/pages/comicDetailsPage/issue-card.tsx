@@ -3,27 +3,45 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
 import { downloadFile } from "@/lib/utils";
-import { useMutation } from "@tanstack/react-query";
-import { Download, Eye, EyeOff } from "lucide-react";
+import type { Issue } from "@/types";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { BookOpen, Download, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { ComicReader } from "./comic-reader";
 
 interface IssueCardProps {
-  issue: {
-    id: number;
-    number: number;
-    title: string;
-    isRead: boolean;
-  };
+  issue: Issue;
   onReadStatusChange?: (issueId: number, isRead: boolean) => void;
+  onSelect?: (issue: IssueCardProps["issue"]) => void;
 }
 
 export function IssueCard({
   issue: initialIssue,
   onReadStatusChange,
+  onSelect,
 }: IssueCardProps) {
+  const [isReaderOpen, setIsReaderOpen] = useState(false);
+  const [isDialogFullscreen, setIsDialogFullscreen] = useState(false);
   const [issue, setIssue] = useState(initialIssue);
+
+  // Fetch reading progress
+  const { data: readingProgress } = useQuery({
+    queryKey: ["reading-progress", issue.id],
+    queryFn: async () => {
+      const response = await fetch(`/api/issues/${issue.id}/progress`);
+      if (!response.ok) throw new Error("Failed to fetch reading progress");
+      return response.json();
+    },
+  });
 
   const updateReadStatusMutation = useMutation({
     mutationFn: async ({ isRead }: { isRead: boolean }) => {
@@ -42,21 +60,21 @@ export function IssueCard({
       return response.json();
     },
     onSuccess: () => {
-      const newIsRead = !issue.isRead;
-      setIssue((prev) => ({ ...prev, isRead: newIsRead }));
+      const newIsRead = !issue.is_read;
+      setIssue((prev) => ({ ...prev, is_read: newIsRead }));
       onReadStatusChange?.(issue.id, newIsRead);
     },
     onError: (error) => {
       console.error("Error updating read status:", error);
       toast.error("Failed to update read status");
       // Revert the local state on error
-      setIssue((prev) => ({ ...prev, isRead: !prev.isRead }));
+      setIssue((prev) => ({ ...prev, is_read: !prev.is_read }));
     },
   });
 
   const handleReadStatusChange = () => {
     // Optimistically update the UI
-    const newIsRead = !issue.isRead;
+    const newIsRead = !issue.is_read;
     onReadStatusChange?.(issue.id, newIsRead);
     updateReadStatusMutation.mutate({ isRead: newIsRead });
   };
@@ -65,64 +83,115 @@ export function IssueCard({
     try {
       await downloadFile(
         `/api/download-issue?issueId=${issue.id}`,
-        issue.title
+        issue.title || ""
       );
     } catch (error) {
       toast.error("Failed to download issue");
     }
   };
 
+  const progress = readingProgress
+    ? (readingProgress.current_page / readingProgress.total_pages) * 100
+    : 0;
+
   return (
     <Card className="overflow-hidden">
-      <CardContent className="p-0">
-        <div className="flex items-center justify-between p-4">
-          <div className="flex items-center gap-4">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted font-semibold">
-              #{issue.number}
-            </div>
-            <div>
-              <h3 className="font-medium">{issue.title}</h3>
-              <div className="flex items-center gap-2 mt-1">
-                <Badge
-                  variant={issue.isRead ? "secondary" : "outline"}
-                  className="text-xs"
-                >
-                  {issue.isRead ? "Read" : "Unread"}
-                </Badge>
-              </div>
+      <CardContent className="p-4">
+        <div className="flex items-center gap-4">
+          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-primary font-medium text-sm">
+            {issue.issue_number}
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-medium truncate">{issue.title}</h3>
+            <div className="flex items-center gap-2 mt-1">
+              <Badge
+                variant={issue.is_read ? "secondary" : "outline"}
+                className="text-xs"
+              >
+                {issue.is_read ? "Read" : "Unread"}
+              </Badge>
+              {readingProgress && (
+                <span className="text-xs text-muted-foreground">
+                  {readingProgress.current_page}/{readingProgress.total_pages}
+                </span>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Dialog
+              open={isReaderOpen}
+              onOpenChange={(open) => {
+                setIsReaderOpen(open);
+                if (!open) setIsDialogFullscreen(false);
+              }}
+            >
+              <DialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-1"
+                >
+                  <BookOpen className="h-3.5 w-3.5" />
+                  Read
+                </Button>
+              </DialogTrigger>
+              <DialogContent
+                className={`p-0 flex flex-col${
+                  isDialogFullscreen
+                    ? " fixed top-1/2 left-1/2 translate-x-[-50%] translate-y-[-50%] z-[100] w-screen h-screen max-w-none rounded-none"
+                    : " h-[90vh] max-w-7xl"
+                }`}
+              >
+                <DialogTitle className="sr-only">
+                  {issue ? `Reading ${issue.title}` : "Comic Reader"}
+                </DialogTitle>
+                {issue && (
+                  <div className="flex-1 min-h-0">
+                    <ComicReader
+                      issueId={issue.id}
+                      filePath={issue.file_path || ""}
+                      isDialogFullscreen={isDialogFullscreen}
+                      onToggleDialogFullscreen={() =>
+                        setIsDialogFullscreen((f) => !f)
+                      }
+                      isRead={!!issue.is_read}
+                      onMarkRead={() => {
+                        console.log("marking read");
+                        if (!issue.is_read) {
+                          console.log("marking read 2");
+                          handleReadStatusChange();
+                        }
+                      }}
+                    />
+                  </div>
+                )}
+              </DialogContent>
+            </Dialog>
+
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
               className="flex items-center gap-1"
               onClick={handleReadStatusChange}
               disabled={updateReadStatusMutation.isPending}
             >
-              {issue.isRead ? (
-                <>
-                  <EyeOff className="h-3.5 w-3.5" />
-                  Mark Unread
-                </>
+              {issue.is_read ? (
+                <EyeOff className="h-3.5 w-3.5" />
               ) : (
-                <>
-                  <Eye className="h-3.5 w-3.5" />
-                  Mark Read
-                </>
+                <Eye className="h-3.5 w-3.5" />
               )}
             </Button>
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
               className="flex items-center gap-1"
               onClick={handleDownload}
             >
               <Download className="h-3.5 w-3.5" />
-              Download
             </Button>
           </div>
         </div>
+        {readingProgress && <Progress value={progress} className="h-1 mt-3" />}
       </CardContent>
     </Card>
   );

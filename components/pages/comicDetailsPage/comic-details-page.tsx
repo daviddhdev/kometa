@@ -20,7 +20,7 @@ import DownloadVolumeButton from "@/components/utils/download-volume-button";
 import type { Issue, Volume } from "@/types";
 import { useMutation } from "@tanstack/react-query";
 import parse from "html-react-parser";
-import { ArrowLeft, BookOpen, Edit, Star, Trash2 } from "lucide-react";
+import { ArrowLeft, Edit, Star, Trash2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -125,10 +125,6 @@ export const ComicDetailsPage = ({
             </div>
 
             <div className="mt-6 flex flex-col gap-3">
-              <Button className="w-full flex items-center gap-2">
-                <BookOpen className="h-4 w-4" />
-                Read Now
-              </Button>
               <div className="grid grid-cols-2 gap-3">
                 <DownloadVolumeButton
                   volumeId={volume.id.toString()}
@@ -229,12 +225,7 @@ export const ComicDetailsPage = ({
             <TabsContent value="issues" className="mt-4">
               <ComicIssues
                 key={issues.map((issue) => issue.issue_number).join(",")}
-                issues={issues.map((issue) => ({
-                  id: issue.id,
-                  number: issue.issue_number,
-                  title: issue.title || "",
-                  isRead: issue.is_read || false,
-                }))}
+                issues={issues}
                 onReadStatusChange={handleReadStatusChange}
               />
             </TabsContent>
