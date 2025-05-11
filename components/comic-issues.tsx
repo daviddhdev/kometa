@@ -3,8 +3,10 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { downloadFile } from "@/lib/utils";
 import { Download, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 
 interface Issue {
   id: string;
@@ -27,6 +29,14 @@ export default function ComicIssues({ issues, comicId }: ComicIssuesProps) {
         issue.id === issueId ? { ...issue, isRead: !issue.isRead } : issue
       )
     );
+  };
+
+  const handleDownload = async (issueId: string, issueTitle: string) => {
+    try {
+      await downloadFile(`/api/download-issue?issueId=${issueId}`, issueTitle);
+    } catch (error) {
+      toast.error("Failed to download issue");
+    }
   };
 
   return (
@@ -74,6 +84,7 @@ export default function ComicIssues({ issues, comicId }: ComicIssuesProps) {
                   variant="outline"
                   size="sm"
                   className="flex items-center gap-1"
+                  onClick={() => handleDownload(issue.id, issue.title)}
                 >
                   <Download className="h-3.5 w-3.5" />
                   Download

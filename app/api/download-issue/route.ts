@@ -3,7 +3,6 @@ import { db } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { createReadStream } from "fs";
 import { NextResponse } from "next/server";
-import path from "path";
 
 export async function GET(req: Request) {
   try {
@@ -34,7 +33,7 @@ export async function GET(req: Request) {
     const fileStream = createReadStream(issue.file_path);
 
     // Get the filename from the path
-    const filename = path.basename(issue.file_path);
+    const filename = issue.title;
 
     // Return the file as a stream
     return new NextResponse(fileStream as any, {

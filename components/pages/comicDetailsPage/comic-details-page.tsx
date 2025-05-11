@@ -4,15 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import DownloadVolumeButton from "@/components/utils/download-volume-button";
 import parse from "html-react-parser";
-import {
-  ArrowLeft,
-  Bookmark,
-  BookOpen,
-  Download,
-  Edit,
-  Share2,
-} from "lucide-react";
+import { ArrowLeft, Bookmark, BookOpen, Edit, Share2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -57,10 +51,10 @@ export const ComicDetailsPage = async ({
                 Read Now
               </Button>
               <div className="grid grid-cols-2 gap-3">
-                <Button variant="outline" className="flex items-center gap-2">
-                  <Download className="h-4 w-4" />
-                  Download
-                </Button>
+                <DownloadVolumeButton
+                  volumeId={volume.id}
+                  volumeName={volume.name}
+                />
                 <Button variant="outline" className="flex items-center gap-2">
                   <Edit className="h-4 w-4" />
                   Edit
