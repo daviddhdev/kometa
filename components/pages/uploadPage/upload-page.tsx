@@ -37,7 +37,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Toaster, toast } from "sonner";
+import { toast } from "sonner";
 import VolumeInfoCard from "./volume-info-card";
 import VolumeSearch from "./volume-search";
 
@@ -214,7 +214,6 @@ export default function UploadPage() {
 
   // Update handleVolumeSelect to handle stored issues
   const handleVolumeSelect = (volume: ComicVineVolume) => {
-    console.log("Selecting volume:", volume);
     setSelectedVolume(volume);
     setShowSearchResults(false);
     setSearchQuery(volume.name);
@@ -293,8 +292,6 @@ export default function UploadPage() {
   };
 
   const handleSubmit = async () => {
-    console.log("Current selectedVolume:", selectedVolume);
-
     if (!selectedVolume) {
       alert("Please select a volume first");
       return;
@@ -416,7 +413,6 @@ export default function UploadPage() {
 
   return (
     <div className="container mx-auto px-4 py-6">
-      <Toaster />
       <Link
         href="/"
         className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground mb-6"

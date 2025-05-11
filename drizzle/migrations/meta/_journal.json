@@ -15,6 +15,13 @@
       "when": 1746976624901,
       "tag": "0001_gray_celestials",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1746996256309,
+      "tag": "0002_little_rogue",
+      "breakpoints": true
     }
   ]
 }

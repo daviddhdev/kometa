@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useComics } from "@/lib/comic-context";
 import { downloadFile } from "@/lib/utils";
+import { useQuery } from "@tanstack/react-query";
 import { BookOpen, FileArchive, Star } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -17,13 +18,24 @@ import { useEffect } from "react";
 import { toast } from "sonner";
 
 export default function ComicGrid() {
-  const { comics, setComics, filteredComics } = useComics();
+  const { setComics, filteredComics } = useComics();
+
+  const { data: comics } = useQuery({
+    queryKey: ["volumes"],
+    queryFn: async () => {
+      const response = await fetch("/api/volumes");
+      if (!response.ok) {
+        throw new Error("Failed to fetch volumes");
+      }
+      return response.json();
+    },
+  });
 
   useEffect(() => {
-    fetch("/api/volumes")
-      .then((res) => res.json())
-      .then(setComics);
-  }, [setComics]);
+    if (comics) {
+      setComics(comics);
+    }
+  }, [comics, setComics]);
 
   const handleDownload = async (volumeId: string, volumeName: string) => {
     try {

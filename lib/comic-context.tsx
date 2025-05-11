@@ -11,6 +11,7 @@ interface Comic {
   description: string | null;
   image: string | null;
   site_detail_url: string | null;
+  is_favorite: boolean;
 }
 
 interface ComicContextType {
@@ -22,6 +23,8 @@ interface ComicContextType {
   setSortOrder: (order: string) => void;
   readStatus: string;
   setReadStatus: (status: string) => void;
+  favoriteStatus: string;
+  setFavoriteStatus: (status: string) => void;
   filteredComics: Comic[];
 }
 
@@ -32,6 +35,7 @@ export function ComicProvider({ children }: { children: ReactNode }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOrder, setSortOrder] = useState("newest");
   const [readStatus, setReadStatus] = useState("all");
+  const [favoriteStatus, setFavoriteStatus] = useState("all");
 
   const filteredComics = comics
     .filter((comic) => {
@@ -46,9 +50,19 @@ export function ComicProvider({ children }: { children: ReactNode }) {
       // Read status filter (if we had read status in the schema)
       const matchesReadStatus = readStatus === "all" || true; // TODO: Implement read status filtering when we add it to the schema
 
-      return matchesSearch && matchesReadStatus;
+      // Favorite filter
+      const matchesFavorite =
+        favoriteStatus === "all" ||
+        (favoriteStatus === "favorite" && comic.is_favorite) ||
+        (favoriteStatus === "not-favorite" && !comic.is_favorite);
+
+      return matchesSearch && matchesReadStatus && matchesFavorite;
     })
     .sort((a, b) => {
+      if (sortOrder === "favorites") {
+        // Sort favorites first
+        return (b.is_favorite ? 1 : 0) - (a.is_favorite ? 1 : 0);
+      }
       switch (sortOrder) {
         case "newest":
           return (b.start_year || 0) - (a.start_year || 0);
@@ -74,6 +88,8 @@ export function ComicProvider({ children }: { children: ReactNode }) {
         setSortOrder,
         readStatus,
         setReadStatus,
+        favoriteStatus,
+        setFavoriteStatus,
         filteredComics,
       }}
     >

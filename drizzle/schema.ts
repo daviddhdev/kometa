@@ -1,4 +1,5 @@
 import {
+  boolean,
   integer,
   pgTable,
   serial,
@@ -21,6 +22,7 @@ export const volumes = pgTable("volumes", {
   deck: text("deck"),
   date_added: varchar("date_added", { length: 100 }),
   date_last_updated: varchar("date_last_updated", { length: 100 }),
+  is_favorite: boolean("is_favorite").default(false),
 });
 
 export const issues = pgTable(

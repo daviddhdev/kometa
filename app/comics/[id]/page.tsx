@@ -5,7 +5,7 @@ async function getVolumeData(id: string) {
   const response = await fetch(
     `${process.env.NEXT_PUBLIC_APP_URL}/api/volumes/${id}`,
     {
-      next: { revalidate: 60 }, // Revalidate every minute
+      next: { revalidate: 0 }, // Revalidate every minute
     }
   );
 
