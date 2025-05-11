@@ -29,17 +29,18 @@ import { toast } from "sonner";
 
 export const ComicDetailsPage = ({
   volume,
-  issues,
+  issues: initialIssues,
 }: {
   volume: Volume;
   issues: Issue[];
 }) => {
   const router = useRouter();
   const [isFavorite, setIsFavorite] = useState(volume.is_favorite);
+  const [issues, setIssues] = useState(initialIssues);
 
   // Calculate reading progress
   const totalIssues = issues.length;
-  const readIssues = issues.filter((issue: any) => issue.is_read).length;
+  const readIssues = issues.filter((issue) => issue.is_read).length;
   const progress = (readIssues / totalIssues) * 100;
 
   const deleteMutation = useMutation({
@@ -90,6 +91,14 @@ export const ComicDetailsPage = ({
 
   const handleToggleFavorite = () => {
     favoriteMutation.mutate();
+  };
+
+  const handleReadStatusChange = (issueId: number, isRead: boolean) => {
+    setIssues((prevIssues) =>
+      prevIssues.map((issue) =>
+        issue.id === issueId ? { ...issue, is_read: isRead } : issue
+      )
+    );
   };
 
   return (
@@ -219,16 +228,14 @@ export const ComicDetailsPage = ({
             </TabsList>
             <TabsContent value="issues" className="mt-4">
               <ComicIssues
-                key={issues
-                  .map((issue: { issue_number: number }) => issue.issue_number)
-                  .join(",")}
-                issues={issues.map((issue: any) => ({
+                key={issues.map((issue) => issue.issue_number).join(",")}
+                issues={issues.map((issue) => ({
                   id: issue.id,
                   number: issue.issue_number,
-                  title: issue.title,
-                  isRead: issue.is_read,
+                  title: issue.title || "",
+                  isRead: issue.is_read || false,
                 }))}
-                comicId={volume.id.toString()}
+                onReadStatusChange={handleReadStatusChange}
               />
             </TabsContent>
             <TabsContent value="details" className="mt-4">

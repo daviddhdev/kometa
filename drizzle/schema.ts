@@ -35,6 +35,7 @@ export const issues = pgTable(
     summary: text("summary"),
     file_path: varchar("file_path", { length: 512 }),
     uploaded_at: timestamp("uploaded_at", { withTimezone: true }).defaultNow(),
+    is_read: boolean("is_read").default(false),
   },
   (table) => ({
     volumeIssueUnique: unique().on(table.volume_id, table.issue_number),

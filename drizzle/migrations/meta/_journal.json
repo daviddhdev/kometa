@@ -22,6 +22,13 @@
       "when": 1746996256309,
       "tag": "0002_little_rogue",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1746998829579,
+      "tag": "0003_great_rumiko_fujikawa",
+      "breakpoints": true
     }
   ]
 }
