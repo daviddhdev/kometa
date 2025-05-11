@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Maximize2, Minimize2 } from "lucide-react";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -158,10 +159,14 @@ export function ComicReader({
       <div className="flex-1 overflow-auto bg-black relative">
         {imageUrl && (
           <div className="absolute inset-0 flex items-center justify-center">
-            <img
+            <Image
               src={imageUrl}
               alt={`Page ${currentPage}`}
-              className="max-w-full max-h-full object-contain"
+              className="max-w-full max-h-full object-cover"
+              width={1000}
+              height={1500}
+              style={{ width: "auto", height: "auto" }}
+              priority
             />
           </div>
         )}

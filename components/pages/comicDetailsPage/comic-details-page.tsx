@@ -26,7 +26,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
-
 export const ComicDetailsPage = ({
   volume,
   issues: initialIssues,
@@ -208,15 +207,6 @@ export const ComicDetailsPage = ({
             </CardContent>
           </Card>
 
-          <div className="mt-6">
-            <h2 className="text-xl font-semibold mb-2">Description</h2>
-            <div className="text-muted-foreground prose prose-sm max-w-none max-h-[400px] overflow-y-auto">
-              {volume.description
-                ? parse(volume.description)
-                : "No description available"}
-            </div>
-          </div>
-
           <Tabs defaultValue="issues" className="mt-8">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="issues">Issues</TabsTrigger>
@@ -242,6 +232,14 @@ export const ComicDetailsPage = ({
                   dateLastUpdated: volume.date_last_updated || "Unknown",
                 }}
               />
+              <div className="mt-6">
+                <h2 className="text-xl font-semibold mb-2">Description</h2>
+                <div className="text-muted-foreground prose prose-sm max-w-none">
+                  {volume.description
+                    ? parse(volume.description)
+                    : "No description available"}
+                </div>
+              </div>
             </TabsContent>
           </Tabs>
         </div>

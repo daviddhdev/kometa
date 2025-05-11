@@ -43,6 +43,18 @@ export function IssueCard({
     },
   });
 
+  // Fetch first page for cover and total pages
+  const { data: pages } = useQuery({
+    queryKey: ["comic-pages", issue.id],
+    queryFn: async () => {
+      const response = await fetch(`/api/issues/${issue.id}/pages`);
+      if (!response.ok) throw new Error("Failed to fetch comic pages");
+      return response.json();
+    },
+  });
+  const coverUrl = pages && pages.length > 0 ? pages[0] : undefined;
+  const totalPages = pages ? pages.length : 0;
+
   const updateReadStatusMutation = useMutation({
     mutationFn: async ({ isRead }: { isRead: boolean }) => {
       const response = await fetch(`/api/issues/${issue.id}/read`, {
@@ -95,103 +107,123 @@ export function IssueCard({
     : 0;
 
   return (
-    <Card className="overflow-hidden">
-      <CardContent className="p-4">
-        <div className="flex items-center gap-4">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-primary font-medium text-sm">
-            {issue.issue_number}
-          </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="font-medium truncate">{issue.title}</h3>
-            <div className="flex items-center gap-2 mt-1">
-              <Badge
-                variant={issue.is_read ? "secondary" : "outline"}
-                className="text-xs"
-              >
-                {issue.is_read ? "Read" : "Unread"}
-              </Badge>
-              {readingProgress && (
-                <span className="text-xs text-muted-foreground">
-                  {readingProgress.current_page}/{readingProgress.total_pages}
-                </span>
-              )}
+    <Card className="overflow-hidden h-full p-0">
+      <CardContent className="p-0 h-full">
+        <div className="flex h-full items-stretch">
+          {coverUrl ? (
+            <div className="relative h-full w-40 flex-shrink-0">
+              <img
+                src={coverUrl}
+                alt={`Cover for ${issue.title}`}
+                className="h-full w-full object-cover rounded-l-lg shadow-md border border-border"
+              />
+              <span className="absolute top-2 left-2 bg-black/70 text-white text-xs font-semibold px-2 py-0.5 rounded">
+                #{issue.issue_number}
+              </span>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Dialog
-              open={isReaderOpen}
-              onOpenChange={(open) => {
-                setIsReaderOpen(open);
-                if (!open) setIsDialogFullscreen(false);
-              }}
-            >
-              <DialogTrigger asChild>
+          ) : (
+            <div className="flex h-full w-40 items-center justify-center bg-primary/10 text-primary font-medium text-xl rounded-lg border border-border shadow-md">
+              {issue.issue_number}
+            </div>
+          )}
+          <div className="flex-1 p-4 flex flex-col h-full">
+            <div className="flex flex-col h-full">
+              <div>
+                <h3 className="font-medium truncate">{issue.title}</h3>
+                <div className="flex items-center gap-2 mt-1">
+                  <Badge
+                    variant={issue.is_read ? "secondary" : "outline"}
+                    className="text-xs"
+                  >
+                    {issue.is_read ? "Read" : "Unread"}
+                  </Badge>
+                  {totalPages > 0 && readingProgress && (
+                    <span className="text-xs text-muted-foreground">
+                      {readingProgress.current_page}/{totalPages}
+                    </span>
+                  )}
+                </div>
+              </div>
+              {totalPages > 0 && readingProgress && (
+                <Progress
+                  value={(readingProgress.current_page / totalPages) * 100}
+                  className="h-1 my-4"
+                />
+              )}
+              <div className="flex items-center gap-2 mt-auto">
+                <Dialog
+                  open={isReaderOpen}
+                  onOpenChange={(open) => {
+                    setIsReaderOpen(open);
+                    if (!open) setIsDialogFullscreen(false);
+                  }}
+                >
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center gap-1"
+                    >
+                      <BookOpen className="h-3.5 w-3.5" />
+                      Read
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent
+                    className={`p-0 flex flex-col${
+                      isDialogFullscreen
+                        ? " fixed top-1/2 left-1/2 translate-x-[-50%] translate-y-[-50%] z-[100] w-screen h-screen max-w-none rounded-none"
+                        : " h-[90vh] max-w-7xl"
+                    }`}
+                  >
+                    <DialogTitle className="sr-only">
+                      {issue ? `Reading ${issue.title}` : "Comic Reader"}
+                    </DialogTitle>
+                    {issue && (
+                      <div className="flex-1 min-h-0">
+                        <ComicReader
+                          issueId={issue.id}
+                          filePath={issue.file_path || ""}
+                          isDialogFullscreen={isDialogFullscreen}
+                          onToggleDialogFullscreen={() =>
+                            setIsDialogFullscreen((f) => !f)
+                          }
+                          isRead={!!issue.is_read}
+                          onMarkRead={() => {
+                            if (!issue.is_read) {
+                              handleReadStatusChange();
+                            }
+                          }}
+                        />
+                      </div>
+                    )}
+                  </DialogContent>
+                </Dialog>
+
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="sm"
                   className="flex items-center gap-1"
+                  onClick={handleReadStatusChange}
+                  disabled={updateReadStatusMutation.isPending}
                 >
-                  <BookOpen className="h-3.5 w-3.5" />
-                  Read
+                  {issue.is_read ? (
+                    <EyeOff className="h-3.5 w-3.5" />
+                  ) : (
+                    <Eye className="h-3.5 w-3.5" />
+                  )}
                 </Button>
-              </DialogTrigger>
-              <DialogContent
-                className={`p-0 flex flex-col${
-                  isDialogFullscreen
-                    ? " fixed top-1/2 left-1/2 translate-x-[-50%] translate-y-[-50%] z-[100] w-screen h-screen max-w-none rounded-none"
-                    : " h-[90vh] max-w-7xl"
-                }`}
-              >
-                <DialogTitle className="sr-only">
-                  {issue ? `Reading ${issue.title}` : "Comic Reader"}
-                </DialogTitle>
-                {issue && (
-                  <div className="flex-1 min-h-0">
-                    <ComicReader
-                      issueId={issue.id}
-                      filePath={issue.file_path || ""}
-                      isDialogFullscreen={isDialogFullscreen}
-                      onToggleDialogFullscreen={() =>
-                        setIsDialogFullscreen((f) => !f)
-                      }
-                      isRead={!!issue.is_read}
-                      onMarkRead={() => {
-                        console.log("marking read");
-                        if (!issue.is_read) {
-                          console.log("marking read 2");
-                          handleReadStatusChange();
-                        }
-                      }}
-                    />
-                  </div>
-                )}
-              </DialogContent>
-            </Dialog>
-
-            <Button
-              variant="ghost"
-              size="sm"
-              className="flex items-center gap-1"
-              onClick={handleReadStatusChange}
-              disabled={updateReadStatusMutation.isPending}
-            >
-              {issue.is_read ? (
-                <EyeOff className="h-3.5 w-3.5" />
-              ) : (
-                <Eye className="h-3.5 w-3.5" />
-              )}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="flex items-center gap-1"
-              onClick={handleDownload}
-            >
-              <Download className="h-3.5 w-3.5" />
-            </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="flex items-center gap-1"
+                  onClick={handleDownload}
+                >
+                  <Download className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
-        {readingProgress && <Progress value={progress} className="h-1 mt-3" />}
       </CardContent>
     </Card>
   );
