@@ -21,13 +21,11 @@ import { ComicReader } from "./comic-reader";
 interface IssueCardProps {
   issue: Issue;
   onReadStatusChange?: (issueId: number, isRead: boolean) => void;
-  onSelect?: (issue: IssueCardProps["issue"]) => void;
 }
 
 export function IssueCard({
   issue: initialIssue,
   onReadStatusChange,
-  onSelect,
 }: IssueCardProps) {
   const [isReaderOpen, setIsReaderOpen] = useState(false);
   const [isDialogFullscreen, setIsDialogFullscreen] = useState(false);
@@ -44,7 +42,7 @@ export function IssueCard({
   });
 
   // Fetch first page for cover and total pages
-  const { data: pages } = useQuery({
+  const { data: pages, isLoading: isLoadingPages } = useQuery({
     queryKey: ["comic-pages", issue.id],
     queryFn: async () => {
       const response = await fetch(`/api/issues/${issue.id}/pages`);
@@ -102,10 +100,6 @@ export function IssueCard({
     }
   };
 
-  const progress = readingProgress
-    ? (readingProgress.current_page / readingProgress.total_pages) * 100
-    : 0;
-
   return (
     <Card className="overflow-hidden h-full p-0">
       <CardContent className="p-0 h-full">
@@ -121,9 +115,27 @@ export function IssueCard({
                 #{issue.issue_number}
               </span>
             </div>
+          ) : isLoadingPages ? (
+            <div className="flex h-full w-40 aspect-[2/3] items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5 text-primary font-medium text-xl rounded-l-lg border border-border shadow-md relative overflow-hidden">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent animate-pulse" />
+              <div className="relative z-10 flex flex-col items-center gap-1">
+                <span className="text-2xl font-bold">
+                  #{issue.issue_number}
+                </span>
+                <span className="text-xs text-primary/70 animate-pulse">
+                  Loading...
+                </span>
+              </div>
+            </div>
           ) : (
-            <div className="flex h-full w-40 items-center justify-center bg-primary/10 text-primary font-medium text-xl rounded-lg border border-border shadow-md">
-              {issue.issue_number}
+            <div className="flex h-full w-40 aspect-[2/3] items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5 text-primary font-medium text-xl rounded-l-lg border border-border shadow-md relative overflow-hidden">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent" />
+              <div className="relative z-10 flex flex-col items-center gap-1">
+                <span className="text-2xl font-bold">
+                  #{issue.issue_number}
+                </span>
+                <span className="text-xs text-primary/70">No Cover</span>
+              </div>
             </div>
           )}
           <div className="flex-1 p-4 flex flex-col h-full">
@@ -144,12 +156,14 @@ export function IssueCard({
                   )}
                 </div>
               </div>
-              {totalPages > 0 && readingProgress && (
-                <Progress
-                  value={(readingProgress.current_page / totalPages) * 100}
-                  className="h-1 my-4"
-                />
-              )}
+              <Progress
+                value={
+                  readingProgress
+                    ? (readingProgress.current_page / totalPages) * 100
+                    : 0
+                }
+                className="h-1 my-4"
+              />
               <div className="flex items-center gap-2 mt-auto">
                 <Dialog
                   open={isReaderOpen}
