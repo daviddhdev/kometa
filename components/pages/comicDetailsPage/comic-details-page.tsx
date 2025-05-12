@@ -20,7 +20,7 @@ import DownloadVolumeButton from "@/components/utils/download-volume-button";
 import type { Issue, Volume } from "@/types";
 import { useMutation } from "@tanstack/react-query";
 import parse from "html-react-parser";
-import { ArrowLeft, Edit, Star, Trash2 } from "lucide-react";
+import { ArrowLeft, Plus, Star, Trash2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -129,10 +129,15 @@ export const ComicDetailsPage = ({
                   volumeId={volume.id.toString()}
                   volumeName={volume.name}
                 />
-                <Button variant="outline" className="flex items-center gap-2">
-                  <Edit className="h-4 w-4" />
-                  Edit
-                </Button>
+                <Link href={`/comics/${volume.id}/add-issues`}>
+                  <Button
+                    variant="outline"
+                    className="flex items-center gap-2 w-full"
+                  >
+                    Manage Issues
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </Link>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <Button
