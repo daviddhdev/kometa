@@ -84,11 +84,11 @@ export function IssueCard({
     },
   });
 
-  const handleReadStatusChange = () => {
+  const handleReadStatusChange = async () => {
     // Optimistically update the UI
     const newIsRead = !issue.is_read;
     onReadStatusChange?.(issue.id, newIsRead);
-    updateReadStatusMutation.mutate({ isRead: newIsRead });
+    await updateReadStatusMutation.mutateAsync({ isRead: newIsRead });
   };
 
   const handleDownload = async () => {
@@ -169,6 +169,7 @@ export function IssueCard({
                     </Button>
                   </DialogTrigger>
                   <DialogContent
+                    hideCloseButton={isDialogFullscreen}
                     className={`p-0 flex flex-col${
                       isDialogFullscreen
                         ? " fixed top-1/2 left-1/2 translate-x-[-50%] translate-y-[-50%] z-[100] w-screen h-screen max-w-none rounded-none"
@@ -188,9 +189,9 @@ export function IssueCard({
                             setIsDialogFullscreen((f) => !f)
                           }
                           isRead={!!issue.is_read}
-                          onMarkRead={() => {
+                          onMarkRead={async () => {
                             if (!issue.is_read) {
-                              handleReadStatusChange();
+                              await handleReadStatusChange();
                             }
                           }}
                         />

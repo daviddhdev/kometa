@@ -1,10 +1,10 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Maximize2, Minimize2 } from "lucide-react";
-import Image from "next/image";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -14,7 +14,7 @@ interface ComicReaderProps {
   isDialogFullscreen?: boolean;
   onToggleDialogFullscreen?: () => void;
   isRead?: boolean;
-  onMarkRead?: () => void;
+  onMarkRead?: () => Promise<void>;
 }
 
 export function ComicReader({
@@ -28,6 +28,7 @@ export function ComicReader({
   const [currentPage, setCurrentPage] = useState(1);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [hasMarkedRead, setHasMarkedRead] = useState(false);
+  const [pageInput, setPageInput] = useState("");
 
   // Fetch reading progress
   const { data: readingProgress } = useQuery({
@@ -85,13 +86,14 @@ export function ComicReader({
       });
 
       if (!response.ok) {
+        console.error("Failed to update read status:", response);
         throw new Error("Failed to update read status");
       }
 
       return response.json();
     },
-    onSuccess: () => {
-      onMarkRead?.();
+    onSuccess: async () => {
+      await onMarkRead?.();
       setHasMarkedRead(true);
       window.location.reload();
     },
@@ -110,6 +112,21 @@ export function ComicReader({
     }
   };
 
+  const handlePageJump = (e: React.FormEvent) => {
+    e.preventDefault();
+    const pageNumber = parseInt(pageInput);
+    if (isNaN(pageNumber)) {
+      toast.error("Please enter a valid page number");
+      return;
+    }
+    if (pageNumber < 1 || pageNumber > pages.length) {
+      toast.error(`Page number must be between 1 and ${pages.length}`);
+      return;
+    }
+    handlePageChange(pageNumber);
+    setPageInput("");
+  };
+
   if (!pages || pages.length === 0) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -119,62 +136,140 @@ export function ComicReader({
   }
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between p-4 bg-background border-b relative rounded-lg">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => handlePageChange(currentPage - 1)}
-            disabled={currentPage <= 1}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <span className="text-sm">
-            Page {currentPage} of {pages.length}
-          </span>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => handlePageChange(currentPage + 1)}
-            disabled={currentPage >= pages.length}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={onToggleDialogFullscreen}
-            className="mr-16"
-          >
-            {isDialogFullscreen ? (
-              <Minimize2 className="h-4 w-4" />
-            ) : (
-              <Maximize2 className="h-4 w-4" />
-            )}
-          </Button>
+    <div className="relative h-full flex flex-col">
+      {!isDialogFullscreen && (
+        <div className="flex items-center justify-between p-4 bg-background border-b relative rounded-lg">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage <= 1}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <form onSubmit={handlePageJump} className="flex items-center gap-2">
+              <Input
+                type="number"
+                value={pageInput}
+                onChange={(e) => setPageInput(e.target.value)}
+                placeholder={`1-${pages?.length || "?"}`}
+                className="w-20 h-8"
+                min={1}
+                max={pages?.length}
+              />
+              <Button type="submit" variant="outline" size="sm">
+                Go
+              </Button>
+            </form>
+            <span className="text-sm">
+              Page {currentPage} of {pages.length}
+            </span>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage >= pages.length}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={onToggleDialogFullscreen}
+              className="mr-16"
+            >
+              {isDialogFullscreen ? (
+                <Minimize2 className="h-4 w-4" />
+              ) : (
+                <Maximize2 className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
 
-      <div className="flex-1 overflow-auto bg-black relative">
+      <div className="h-full overflow-auto bg-black relative">
         {imageUrl && (
           <div className="absolute inset-0 flex items-center justify-center">
-            <Image
+            <img
               src={imageUrl}
               alt={`Page ${currentPage}`}
-              className="max-w-full max-h-full object-cover"
-              width={1000}
-              height={1500}
-              style={{ width: "auto", height: "auto" }}
-              priority
+              className="max-w-full max-h-full object-contain"
             />
           </div>
         )}
       </div>
 
-      <div className="p-4 bg-background border-t rounded-b-lg">
-        <Progress value={(currentPage / pages.length) * 100} className="h-2" />
-      </div>
+      {!isDialogFullscreen && (
+        <div className="p-4 bg-background border-t rounded-b-lg">
+          <Progress
+            value={(currentPage / pages.length) * 100}
+            className="h-2"
+          />
+        </div>
+      )}
+
+      {isDialogFullscreen && (
+        <>
+          <div className="absolute top-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-sm opacity-0 hover:opacity-100 transition-opacity duration-200 z-10">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage <= 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <form
+                  onSubmit={handlePageJump}
+                  className="flex items-center gap-2"
+                >
+                  <Input
+                    type="number"
+                    value={pageInput}
+                    onChange={(e) => setPageInput(e.target.value)}
+                    placeholder={`1-${pages?.length || "?"}`}
+                    className="w-20 h-8"
+                    min={1}
+                    max={pages?.length}
+                  />
+                  <Button type="submit" variant="outline" size="sm">
+                    Go
+                  </Button>
+                </form>
+                <span className="text-sm">
+                  Page {currentPage} of {pages.length}
+                </span>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage >= pages.length}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={onToggleDialogFullscreen}
+                className="hover:bg-background/90"
+              >
+                <Minimize2 className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+          <div className="absolute bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-sm opacity-0 hover:opacity-100 transition-opacity duration-200 z-10">
+            <Progress
+              value={(currentPage / pages.length) * 100}
+              className="h-2"
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 }
