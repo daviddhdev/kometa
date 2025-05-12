@@ -11,7 +11,7 @@ import {
 import { useComics } from "@/lib/comic-context";
 import { downloadFile } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
-import { BookOpen, FileArchive, Star } from "lucide-react";
+import { BookOpen, CheckCircle2, FileArchive, Star } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect } from "react";
@@ -72,12 +72,19 @@ export default function ComicGrid() {
             </Link>
             <CardContent className="p-4 flex-grow">
               <Link href={`/comics/${comic.id}`}>
-                <h3 className="font-semibold text-lg line-clamp-2 hover:underline flex items-center gap-2">
-                  {comic.name}
-                  {comic.is_favorite && (
-                    <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
-                  )}
-                </h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold text-lg line-clamp-2 hover:underline flex-1">
+                    {comic.name}
+                  </h3>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    {comic.is_favorite && (
+                      <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                    )}
+                    {comic.is_fully_read && (
+                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                    )}
+                  </div>
+                </div>
               </Link>
               <p className="text-sm text-muted-foreground mt-1">
                 {comic.publisher}

@@ -12,6 +12,7 @@ interface Comic {
   image: string | null;
   site_detail_url: string | null;
   is_favorite: boolean;
+  is_fully_read: boolean;
 }
 
 interface ComicContextType {

@@ -2,7 +2,9 @@ import { issues, volumes } from "@/drizzle/schema";
 import { InferSelectModel } from "drizzle-orm";
 
 // Database Types
-export type Volume = InferSelectModel<typeof volumes>;
+export type Volume = InferSelectModel<typeof volumes> & {
+  is_fully_read?: boolean;
+};
 export type Issue = InferSelectModel<typeof issues>;
 
 // API Response Types
