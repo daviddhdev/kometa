@@ -1,3 +1,4 @@
+import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
 
 interface ZoomLensProps {
@@ -5,6 +6,8 @@ interface ZoomLensProps {
   isEnabled: boolean;
   containerRef: React.RefObject<HTMLDivElement | null>;
   imageRef: React.RefObject<HTMLImageElement | null>;
+  currentPage: number;
+  previousPage: number;
 }
 
 export const ZoomLens = ({
@@ -12,6 +15,8 @@ export const ZoomLens = ({
   isEnabled,
   containerRef,
   imageRef,
+  currentPage,
+  previousPage,
 }: ZoomLensProps) => {
   const [mousePosition, setMousePosition] = useState({
     x: 0,
@@ -64,12 +69,27 @@ export const ZoomLens = ({
       onMouseLeave={handleMouseLeave}
     >
       <div className="absolute inset-0 flex items-center justify-center">
-        <img
-          ref={imageRef}
-          src={imageUrl}
-          alt="Comic page"
-          className="max-w-full max-h-full object-contain"
-        />
+        <AnimatePresence mode="wait">
+          {imageUrl && (
+            <motion.img
+              key={currentPage}
+              ref={imageRef}
+              src={imageUrl}
+              alt="Comic page"
+              className="max-w-full max-h-full object-contain"
+              initial={{
+                opacity: 0,
+                x: currentPage > previousPage ? 100 : -100,
+              }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{
+                opacity: 0,
+                x: currentPage > previousPage ? -100 : 100,
+              }}
+              transition={{ duration: 0.3, ease: "easeInOut" }}
+            />
+          )}
+        </AnimatePresence>
         {isEnabled && showLens && (
           <div
             className="absolute pointer-events-none border-2 border-white overflow-hidden"
