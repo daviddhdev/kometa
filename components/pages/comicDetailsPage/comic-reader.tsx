@@ -16,9 +16,11 @@ import {
   Keyboard,
   Maximize2,
   Minimize2,
+  Pause,
+  Play,
   ZoomIn,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ZoomLens } from "./comic-reader-zoom";
 
@@ -45,6 +47,9 @@ export function ComicReader({
   const [hasMarkedRead, setHasMarkedRead] = useState(false);
   const [pageInput, setPageInput] = useState("");
   const [isZoomEnabled, setIsZoomEnabled] = useState(false);
+  const [isAutoPlaying, setIsAutoPlaying] = useState(false);
+  const [autoPlaySpeed, setAutoPlaySpeed] = useState(5);
+  const autoPlayIntervalRef = useRef<NodeJS.Timeout>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -81,31 +86,6 @@ export function ComicReader({
     },
   });
 
-  useEffect(() => {
-    if (readingProgress) {
-      setCurrentPage(readingProgress.current_page);
-    }
-  }, [readingProgress]);
-
-  useEffect(() => {
-    if (pages && pages.length > 0) {
-      setImageUrl(pages[currentPage - 1]);
-    }
-  }, [pages, currentPage]);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "ArrowRight") {
-        handlePageChange(currentPage + 1);
-      } else if (e.key === "ArrowLeft") {
-        handlePageChange(currentPage - 1);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [currentPage, pages]);
-
   const updateReadStatusMutation = useMutation({
     mutationFn: async () => {
       const response = await fetch(`/api/issues/${issueId}/read`, {
@@ -134,15 +114,74 @@ export function ComicReader({
     },
   });
 
-  const handlePageChange = (newPage: number) => {
-    if (!pages || newPage < 1 || newPage > pages.length) return;
-    setPreviousPage(currentPage);
-    setCurrentPage(newPage);
-    updateProgressMutation.mutate({ page: newPage, total: pages.length });
-    if (newPage === pages.length && !isRead && onMarkRead && !hasMarkedRead) {
-      updateReadStatusMutation.mutate();
+  useEffect(() => {
+    if (readingProgress) {
+      setCurrentPage(readingProgress.current_page);
     }
-  };
+  }, [readingProgress]);
+
+  useEffect(() => {
+    if (pages && pages.length > 0) {
+      setImageUrl(pages[currentPage - 1]);
+    }
+  }, [pages, currentPage]);
+
+  const handlePageChange = useCallback(
+    (newPage: number, isAutoPlayNavigation = false) => {
+      if (!pages || newPage < 1 || newPage > pages.length) return;
+
+      // Only stop auto-play if this is a manual navigation
+      if (isAutoPlaying && !isAutoPlayNavigation) {
+        setIsAutoPlaying(false);
+      }
+
+      setPreviousPage(currentPage);
+      setCurrentPage(newPage);
+      updateProgressMutation.mutate({ page: newPage, total: pages.length });
+      if (newPage === pages.length && !isRead && onMarkRead && !hasMarkedRead) {
+        updateReadStatusMutation.mutate();
+      }
+    },
+    [
+      pages,
+      isAutoPlaying,
+      currentPage,
+      updateProgressMutation,
+      isRead,
+      onMarkRead,
+      hasMarkedRead,
+      updateReadStatusMutation,
+    ]
+  );
+
+  useEffect(() => {
+    if (isAutoPlaying) {
+      autoPlayIntervalRef.current = setInterval(() => {
+        // Stop auto-play if we're at the last page
+        if (currentPage >= (pages?.length || 0)) {
+          setIsAutoPlaying(false);
+          return;
+        }
+        handlePageChange(currentPage + 1, true);
+      }, autoPlaySpeed * 1000);
+    } else {
+      if (autoPlayIntervalRef.current) {
+        clearInterval(autoPlayIntervalRef.current);
+      }
+    }
+
+    return () => {
+      if (autoPlayIntervalRef.current) {
+        clearInterval(autoPlayIntervalRef.current);
+      }
+    };
+  }, [
+    isAutoPlaying,
+    autoPlaySpeed,
+    currentPage,
+    handlePageChange,
+    pages?.length,
+  ]);
 
   const handlePageJump = (e: React.FormEvent) => {
     e.preventDefault();
@@ -155,8 +194,32 @@ export function ComicReader({
       toast.error(`Page number must be between 1 and ${pages.length}`);
       return;
     }
-    handlePageChange(pageNumber);
+    handlePageChange(pageNumber, false);
     setPageInput("");
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "ArrowRight") {
+        handlePageChange(currentPage + 1, false);
+      } else if (e.key === "ArrowLeft") {
+        handlePageChange(currentPage - 1, false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [currentPage, pages]);
+
+  const toggleAutoPlay = () => {
+    setIsAutoPlaying(!isAutoPlaying);
+  };
+
+  const handleSpeedChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newSpeed = parseInt(e.target.value);
+    if (!isNaN(newSpeed) && newSpeed >= 1 && newSpeed <= 30) {
+      setAutoPlaySpeed(newSpeed);
+    }
   };
 
   if (!pages || pages.length === 0) {
@@ -207,6 +270,31 @@ export function ComicReader({
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
+
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={toggleAutoPlay}
+              className={isAutoPlaying ? "bg-primary/10" : ""}
+            >
+              {isAutoPlaying ? (
+                <Pause className="h-4 w-4" />
+              ) : (
+                <Play className="h-4 w-4" />
+              )}
+            </Button>
+
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                value={autoPlaySpeed}
+                onChange={handleSpeedChange}
+                className="w-16 h-8"
+                min={1}
+                max={30}
+              />
+              <span className="text-sm text-muted-foreground">sec</span>
+            </div>
 
             <Button
               variant="outline"
@@ -310,6 +398,31 @@ export function ComicReader({
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
+
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={toggleAutoPlay}
+                  className={isAutoPlaying ? "bg-primary/10" : ""}
+                >
+                  {isAutoPlaying ? (
+                    <Pause className="h-4 w-4" />
+                  ) : (
+                    <Play className="h-4 w-4" />
+                  )}
+                </Button>
+
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    value={autoPlaySpeed}
+                    onChange={handleSpeedChange}
+                    className="w-16 h-8"
+                    min={1}
+                    max={30}
+                  />
+                  <span className="text-sm text-muted-foreground">sec</span>
+                </div>
 
                 <Button
                   variant="outline"
