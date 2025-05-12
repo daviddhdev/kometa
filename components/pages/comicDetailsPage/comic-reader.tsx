@@ -4,9 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, Maximize2, Minimize2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Maximize2,
+  Minimize2,
+  ZoomIn,
+} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { ZoomLens } from "./comic-reader-zoom";
 
 interface ComicReaderProps {
   issueId: number;
@@ -29,6 +36,9 @@ export function ComicReader({
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [hasMarkedRead, setHasMarkedRead] = useState(false);
   const [pageInput, setPageInput] = useState("");
+  const [isZoomEnabled, setIsZoomEnabled] = useState(false);
+  const imageRef = useRef<HTMLImageElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Fetch reading progress
   const { data: readingProgress } = useQuery({
@@ -176,6 +186,14 @@ export function ComicReader({
             <Button
               variant="outline"
               size="icon"
+              onClick={() => setIsZoomEnabled(!isZoomEnabled)}
+              className={isZoomEnabled ? "bg-primary/10" : ""}
+            >
+              <ZoomIn className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
               onClick={onToggleDialogFullscreen}
               className="mr-16"
             >
@@ -189,17 +207,12 @@ export function ComicReader({
         </div>
       )}
 
-      <div className="h-full overflow-auto bg-black relative">
-        {imageUrl && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <img
-              src={imageUrl}
-              alt={`Page ${currentPage}`}
-              className="max-w-full max-h-full object-contain"
-            />
-          </div>
-        )}
-      </div>
+      <ZoomLens
+        imageUrl={imageUrl}
+        isEnabled={isZoomEnabled}
+        containerRef={containerRef}
+        imageRef={imageRef}
+      />
 
       {!isDialogFullscreen && (
         <div className="p-4 bg-background border-t rounded-b-lg">
@@ -250,6 +263,14 @@ export function ComicReader({
                   disabled={currentPage >= pages.length}
                 >
                   <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setIsZoomEnabled(!isZoomEnabled)}
+                  className={isZoomEnabled ? "bg-primary/10" : ""}
+                >
+                  <ZoomIn className="h-4 w-4" />
                 </Button>
               </div>
               <Button
