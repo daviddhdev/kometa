@@ -73,3 +73,15 @@ export const collection_volumes = pgTable(
   },
   (table) => [unique().on(table.collection_id, table.volume_id)]
 );
+
+export const upcoming_releases = pgTable("upcoming_releases", {
+  id: serial("id").primaryKey(),
+  comicvine_issue_id: integer("comicvine_issue_id").notNull(),
+  volume_id: integer("volume_id")
+    .references(() => volumes.id)
+    .notNull(),
+  issue_number: varchar("issue_number", { length: 50 }).notNull(),
+  name: varchar("name", { length: 255 }),
+  store_date: timestamp("store_date", { withTimezone: true }).notNull(),
+  last_updated: timestamp("last_updated", { withTimezone: true }).defaultNow(),
+});

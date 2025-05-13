@@ -1,10 +1,13 @@
-import { issues, volumes } from "@/drizzle/schema";
+import { issues, upcoming_releases, volumes } from "@/drizzle/schema";
 import { db } from "@/lib/db";
 import { ErrorResponse, Issue } from "@/types";
 import { eq } from "drizzle-orm";
 import { mkdir, writeFile } from "fs/promises";
 import { NextResponse } from "next/server";
 import path from "path";
+
+const COMICVINE_API_KEY = process.env.COMIC_VINE_API_KEY;
+const COMICVINE_BASE_URL = "https://comicvine.gamespot.com/api";
 
 export async function POST(
   req: Request
@@ -81,6 +84,54 @@ export async function POST(
           date_added: vol.date_added,
           date_last_updated: vol.date_last_updated,
         });
+
+        // If this is a new volume, update upcoming releases
+        if (COMICVINE_API_KEY) {
+          // Get current date and date 30 days from now
+          const today = new Date();
+          const thirtyDaysFromNow = new Date();
+          thirtyDaysFromNow.setDate(today.getDate() + 30);
+
+          // Format dates for ComicVine API
+          const formatDate = (date: Date) => {
+            return date.toISOString().split("T")[0];
+          };
+
+          // Fetch upcoming releases for the new volume
+          const response = await fetch(
+            `${COMICVINE_BASE_URL}/issues/?api_key=${COMICVINE_API_KEY}&format=json&field_list=id,issue_number,name,store_date,volume&filter=store_date:${formatDate(
+              today
+            )}|${formatDate(thirtyDaysFromNow)}&sort=store_date:asc&limit=100`,
+            {
+              headers: {
+                "User-Agent": "ComicReader/1.0",
+              },
+            }
+          );
+
+          if (response.ok) {
+            const data = await response.json();
+
+            // Filter releases to only include those from the new volume
+            const filteredResults = data.results.filter(
+              (release: any) => release.volume.id === Number(vol.id)
+            );
+
+            // Insert new upcoming releases
+            const releasesToInsert = filteredResults.map((release: any) => ({
+              comicvine_issue_id: release.id,
+              volume_id: release.volume.id,
+              issue_number: release.issue_number,
+              name: release.name,
+              store_date: new Date(release.store_date),
+              last_updated: new Date(),
+            }));
+
+            if (releasesToInsert.length > 0) {
+              await db.insert(upcoming_releases).values(releasesToInsert);
+            }
+          }
+        }
       } else {
         // Optionally update missing fields
         await db
