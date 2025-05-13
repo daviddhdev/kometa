@@ -37,9 +37,7 @@ export const issues = pgTable(
     uploaded_at: timestamp("uploaded_at", { withTimezone: true }).defaultNow(),
     is_read: boolean("is_read").default(false),
   },
-  (table) => ({
-    volumeIssueUnique: unique().on(table.volume_id, table.issue_number),
-  })
+  (table) => [unique().on(table.volume_id, table.issue_number)]
 );
 
 export const reading_progress = pgTable("reading_progress", {
@@ -52,3 +50,26 @@ export const reading_progress = pgTable("reading_progress", {
   last_read_at: timestamp("last_read_at", { withTimezone: true }).defaultNow(),
   is_completed: boolean("is_completed").default(false),
 });
+
+export const collections = pgTable("collections", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
+export const collection_volumes = pgTable(
+  "collection_volumes",
+  {
+    id: serial("id").primaryKey(),
+    collection_id: integer("collection_id")
+      .references(() => collections.id)
+      .notNull(),
+    volume_id: integer("volume_id")
+      .references(() => volumes.id)
+      .notNull(),
+    added_at: timestamp("added_at", { withTimezone: true }).defaultNow(),
+  },
+  (table) => [unique().on(table.collection_id, table.volume_id)]
+);

@@ -1,3 +1,5 @@
+import { Nav } from "@/components/nav";
+import { Providers } from "@/components/providers";
 import { ComicProvider } from "@/lib/comic-context";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
@@ -19,7 +21,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <ComicProvider>{children}</ComicProvider>
+        <Providers>
+          <ComicProvider>
+            <Nav />
+            {children}
+          </ComicProvider>
+        </Providers>
         <Toaster />
       </body>
     </html>

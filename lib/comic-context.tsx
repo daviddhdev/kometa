@@ -1,23 +1,11 @@
 "use client";
 
+import type { Volume } from "@/types";
 import { createContext, ReactNode, useContext, useState } from "react";
 
-interface Comic {
-  id: number;
-  name: string;
-  publisher: string | null;
-  start_year: number | null;
-  count_of_issues: number | null;
-  description: string | null;
-  image: string | null;
-  site_detail_url: string | null;
-  is_favorite: boolean;
-  is_fully_read: boolean;
-}
-
 interface ComicContextType {
-  comics: Comic[];
-  setComics: (comics: Comic[]) => void;
+  volumes: Volume[];
+  setVolumes: (volumes: Volume[]) => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   sortOrder: string;
@@ -26,27 +14,27 @@ interface ComicContextType {
   setReadStatus: (status: string) => void;
   favoriteStatus: string;
   setFavoriteStatus: (status: string) => void;
-  filteredComics: Comic[];
+  filteredVolumes: Volume[];
 }
 
 const ComicContext = createContext<ComicContextType | undefined>(undefined);
 
 export function ComicProvider({ children }: { children: ReactNode }) {
-  const [comics, setComics] = useState<Comic[]>([]);
+  const [volumes, setVolumes] = useState<Volume[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOrder, setSortOrder] = useState("newest");
   const [readStatus, setReadStatus] = useState("all");
   const [favoriteStatus, setFavoriteStatus] = useState("all");
 
-  const filteredComics = comics
-    .filter((comic) => {
+  const filteredVolumes = volumes
+    .filter((volume) => {
       // Search filter
       const searchLower = searchQuery.toLowerCase();
       const matchesSearch =
         !searchQuery ||
-        comic.name.toLowerCase().includes(searchLower) ||
-        comic.publisher?.toLowerCase().includes(searchLower) ||
-        comic.description?.toLowerCase().includes(searchLower);
+        volume.name.toLowerCase().includes(searchLower) ||
+        volume.publisher?.toLowerCase().includes(searchLower) ||
+        volume.description?.toLowerCase().includes(searchLower);
 
       // Read status filter (if we had read status in the schema)
       const matchesReadStatus = readStatus === "all" || true; // TODO: Implement read status filtering when we add it to the schema
@@ -54,8 +42,8 @@ export function ComicProvider({ children }: { children: ReactNode }) {
       // Favorite filter
       const matchesFavorite =
         favoriteStatus === "all" ||
-        (favoriteStatus === "favorite" && comic.is_favorite) ||
-        (favoriteStatus === "not-favorite" && !comic.is_favorite);
+        (favoriteStatus === "favorite" && volume.is_favorite) ||
+        (favoriteStatus === "not-favorite" && !volume.is_favorite);
 
       return matchesSearch && matchesReadStatus && matchesFavorite;
     })
@@ -81,8 +69,8 @@ export function ComicProvider({ children }: { children: ReactNode }) {
   return (
     <ComicContext.Provider
       value={{
-        comics,
-        setComics,
+        volumes,
+        setVolumes,
         searchQuery,
         setSearchQuery,
         sortOrder,
@@ -91,7 +79,7 @@ export function ComicProvider({ children }: { children: ReactNode }) {
         setReadStatus,
         favoriteStatus,
         setFavoriteStatus,
-        filteredComics,
+        filteredVolumes,
       }}
     >
       {children}
