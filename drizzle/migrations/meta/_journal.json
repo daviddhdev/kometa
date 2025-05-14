@@ -50,6 +50,13 @@
       "when": 1747161943046,
       "tag": "0006_opposite_tomas",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1747242911307,
+      "tag": "0007_chemical_sentinels",
+      "breakpoints": true
     }
   ]
 }

@@ -8,9 +8,10 @@ const COMICVINE_API_KEY = process.env.COMIC_VINE_API_KEY;
 export async function GET() {
   try {
     // Get current date and date 30 days from now
-    const today = new Date();
+    const todayMinusOneWeek = new Date();
+    todayMinusOneWeek.setDate(todayMinusOneWeek.getDate() - 7);
     const thirtyDaysFromNow = new Date();
-    thirtyDaysFromNow.setDate(today.getDate() + 30);
+    thirtyDaysFromNow.setDate(todayMinusOneWeek.getDate() + 30);
 
     // Check if we need to refresh the data (if last_updated is more than a week old)
     const oneWeekAgo = new Date();
@@ -23,7 +24,7 @@ export async function GET() {
       .from(upcoming_releases)
       .where(
         and(
-          gt(upcoming_releases.store_date, today),
+          gt(upcoming_releases.store_date, todayMinusOneWeek),
           lt(upcoming_releases.store_date, thirtyDaysFromNow),
           lt(upcoming_releases.last_updated, oneWeekAgo)
         )
@@ -54,6 +55,7 @@ export async function GET() {
         name: upcoming_releases.name,
         store_date: upcoming_releases.store_date,
         last_updated: upcoming_releases.last_updated,
+        cover_image: upcoming_releases.cover_image,
         volume: {
           id: volumes.id,
           name: volumes.name,
@@ -63,7 +65,7 @@ export async function GET() {
       .leftJoin(volumes, eq(upcoming_releases.volume_id, volumes.id))
       .where(
         and(
-          gt(upcoming_releases.store_date, today),
+          gt(upcoming_releases.store_date, todayMinusOneWeek),
           lt(upcoming_releases.store_date, thirtyDaysFromNow)
         )
       )

@@ -84,4 +84,5 @@ export const upcoming_releases = pgTable("upcoming_releases", {
   name: varchar("name", { length: 255 }),
   store_date: timestamp("store_date", { withTimezone: true }).notNull(),
   last_updated: timestamp("last_updated", { withTimezone: true }).defaultNow(),
+  cover_image: varchar("cover_image", { length: 512 }),
 });

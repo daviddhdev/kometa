@@ -1,6 +1,5 @@
 import { upcoming_releases, volumes } from "@/drizzle/schema";
 import { db } from "@/lib/db";
-import { and, gt, lt } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
 const COMICVINE_API_KEY = process.env.COMIC_VINE_API_KEY;
@@ -39,7 +38,7 @@ export async function POST() {
 
     // Fetch upcoming releases for all volumes in the user's library
     const response = await fetch(
-      `${COMICVINE_BASE_URL}/issues/?api_key=${COMICVINE_API_KEY}&format=json&field_list=id,issue_number,name,store_date,volume&filter=store_date:${formatDate(
+      `${COMICVINE_BASE_URL}/issues/?api_key=${COMICVINE_API_KEY}&format=json&field_list=id,issue_number,name,store_date,volume,image&filter=store_date:${formatDate(
         today
       )}|${formatDate(thirtyDaysFromNow)}&sort=store_date:asc&limit=100`,
       {
@@ -55,29 +54,40 @@ export async function POST() {
 
     const data = await response.json();
 
+    // Log the first result to debug the response structure
+    if (data.results && data.results.length > 0) {
+      console.log(
+        "Sample ComicVine API response:",
+        JSON.stringify(data.results[0], null, 2)
+      );
+    }
+
     // Filter releases to only include those from volumes in the user's library
     const filteredResults = data.results.filter((release: any) =>
       volumeIdMap.has(release.volume.id)
     );
 
-    // Delete old upcoming releases
-    await db
-      .delete(upcoming_releases)
-      .where(
-        and(
-          gt(upcoming_releases.store_date, today),
-          lt(upcoming_releases.store_date, thirtyDaysFromNow)
-        )
-      );
+    // Get existing comicvine_issue_ids to avoid duplicates
+    const existingIds = await db
+      .select({ comicvine_issue_id: upcoming_releases.comicvine_issue_id })
+      .from(upcoming_releases)
+      .then((results) => new Set(results.map((r) => r.comicvine_issue_id)));
+
+    // Filter out releases that already exist
+    const newReleases = filteredResults.filter(
+      (release: any) => !existingIds.has(release.id)
+    );
 
     // Insert new upcoming releases
-    const releasesToInsert = filteredResults.map((release: any) => ({
+    const releasesToInsert = newReleases.map((release: any) => ({
       comicvine_issue_id: release.id,
       volume_id: release.volume.id,
       issue_number: release.issue_number,
-      name: release.name,
+      name: release.name || null,
       store_date: new Date(release.store_date),
       last_updated: new Date(),
+      cover_image:
+        release.image?.thumb_url || release.image?.original_url || null,
     }));
 
     if (releasesToInsert.length > 0) {

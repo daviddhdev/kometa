@@ -1,0 +1,1 @@
+ALTER TABLE "upcoming_releases" ADD COLUMN "cover_image" varchar(512);

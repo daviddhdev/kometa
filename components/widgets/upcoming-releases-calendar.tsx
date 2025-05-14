@@ -1,9 +1,9 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { RefreshCw } from "lucide-react";
+import Image from "next/image";
 import { Button } from "../ui/button";
 
 interface UpcomingRelease {
@@ -11,14 +11,22 @@ interface UpcomingRelease {
   issue_number: string;
   name: string;
   store_date: string;
+  cover_image: string;
   volume: {
     name: string;
     id: number;
   };
 }
 
+interface WeekGroup {
+  startDate: Date;
+  endDate: Date;
+  releases: UpcomingRelease[];
+}
+
 export function UpcomingReleasesCalendar() {
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const queryClient = useQueryClient();
+  const isDevelopment = process.env.NODE_ENV === "development";
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["upcoming-releases"],
@@ -31,50 +39,68 @@ export function UpcomingReleasesCalendar() {
     },
   });
 
-  const getDaysInMonth = (date: Date) => {
-    return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+  const handleRefresh = async () => {
+    try {
+      const response = await fetch("/api/upcoming-releases/update", {
+        method: "POST",
+      });
+      if (!response.ok) {
+        throw new Error("Failed to update releases");
+      }
+      await queryClient.invalidateQueries({ queryKey: ["upcoming-releases"] });
+    } catch (error) {
+      console.error("Error refreshing releases:", error);
+    }
   };
 
-  const getFirstDayOfMonth = (date: Date) => {
-    return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+    });
   };
 
-  const formatDate = (date: Date) => {
-    return date.toISOString().split("T")[0];
+  const formatWeekRange = (startDate: Date, endDate: Date) => {
+    const formatOptions: Intl.DateTimeFormatOptions = {
+      month: "long",
+      day: "numeric",
+    };
+    return `${startDate.toLocaleDateString(
+      "en-US",
+      formatOptions
+    )} - ${endDate.toLocaleDateString("en-US", formatOptions)}`;
   };
 
-  const releasesByDate =
-    data?.results?.reduce(
-      (acc: Record<string, UpcomingRelease[]>, release: UpcomingRelease) => {
-        const date = release.store_date;
-        if (!acc[date]) {
-          acc[date] = [];
-        }
-        acc[date].push(release);
-        return acc;
-      },
-      {}
-    ) || {};
+  const groupReleasesByWeek = (releases: UpcomingRelease[]): WeekGroup[] => {
+    const groups: WeekGroup[] = [];
+    let currentGroup: WeekGroup | null = null;
 
-  const daysInMonth = getDaysInMonth(currentDate);
-  const firstDayOfMonth = getFirstDayOfMonth(currentDate);
-  const monthName = currentDate.toLocaleString("default", {
-    month: "long",
-    year: "numeric",
-  });
+    releases.forEach((release) => {
+      const releaseDate = new Date(release.store_date);
+      const weekStart = new Date(releaseDate);
+      weekStart.setDate(releaseDate.getDate() - releaseDate.getDay()); // Start of week (Sunday)
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 6); // End of week (Saturday)
 
-  const previousMonth = () => {
-    setCurrentDate(
-      new Date(currentDate.getFullYear(), currentDate.getMonth() - 1)
-    );
+      if (!currentGroup || releaseDate > currentGroup.endDate) {
+        currentGroup = {
+          startDate: weekStart,
+          endDate: weekEnd,
+          releases: [],
+        };
+        groups.push(currentGroup);
+      }
+      currentGroup.releases.push(release);
+    });
+
+    return groups;
   };
 
-  const nextMonth = () => {
-    setCurrentDate(
-      new Date(currentDate.getFullYear(), currentDate.getMonth() + 1)
-    );
-  };
-  console.log(data);
+  const releases = data?.results || [];
+  const weekGroups = groupReleasesByWeek(releases);
+
   if (isLoading) {
     return (
       <Card>
@@ -108,61 +134,68 @@ export function UpcomingReleasesCalendar() {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-xl font-bold">Upcoming Releases</CardTitle>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" onClick={previousMonth}>
-            <ChevronLeft className="h-4 w-4" />
+        {isDevelopment && (
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={handleRefresh}
+            title="Refresh releases data"
+          >
+            <RefreshCw className="h-4 w-4" />
           </Button>
-          <span className="text-sm font-medium">{monthName}</span>
-          <Button variant="outline" size="icon" onClick={nextMonth}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
+        )}
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-7 gap-1 text-center text-sm font-medium text-muted-foreground mb-2">
-          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-            <div key={day}>{day}</div>
-          ))}
-        </div>
-        <div className="grid grid-cols-7 gap-1">
-          {Array.from({ length: firstDayOfMonth }).map((_, index) => (
-            <div key={`empty-${index}`} className="aspect-square" />
-          ))}
-          {Array.from({ length: daysInMonth }).map((_, index) => {
-            const day = index + 1;
-            const date = new Date(
-              currentDate.getFullYear(),
-              currentDate.getMonth(),
-              day
-            );
-            const dateString = formatDate(date);
-            const releases = releasesByDate[dateString] || [];
-
-            return (
-              <div
-                key={day}
-                className={`aspect-square p-1 border rounded-md ${
-                  releases.length > 0 ? "bg-primary/5" : ""
-                }`}
-              >
-                <div className="text-sm font-medium">{day}</div>
-                {releases.length > 0 && (
-                  <div className="mt-1 space-y-1">
-                    {releases.map((release: UpcomingRelease) => (
-                      <div
-                        key={release.id}
-                        className="text-xs p-1 bg-primary/10 rounded truncate"
-                        title={`${release.volume.name} #${release.issue_number}`}
-                      >
-                        {release.volume.name} #{release.issue_number}
-                      </div>
-                    ))}
-                  </div>
-                )}
+        <div className="space-y-8">
+          {weekGroups.map((group, index) => (
+            <div key={group.startDate.toISOString()} className="space-y-4">
+              <div className="flex items-center gap-2">
+                <div className="h-px flex-1 bg-border" />
+                <h3 className="text-sm font-medium text-muted-foreground whitespace-nowrap">
+                  {formatWeekRange(group.startDate, group.endDate)}
+                </h3>
+                <div className="h-px flex-1 bg-border" />
               </div>
-            );
-          })}
+              <div className="space-y-4">
+                {group.releases.map((release) => (
+                  <div
+                    key={release.id}
+                    className="flex items-start gap-4 p-4 rounded-lg hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="relative w-24 h-36 flex-shrink-0">
+                      {release.cover_image ? (
+                        <Image
+                          src={release.cover_image}
+                          alt={`${release.volume.name} #${release.issue_number} cover`}
+                          fill
+                          className="object-cover rounded-md"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-muted rounded-md flex items-center justify-center">
+                          <span className="text-xs text-muted-foreground">
+                            No cover
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-muted-foreground">
+                        {formatDate(release.store_date)}
+                      </div>
+                      <h3 className="font-semibold truncate">
+                        {release.volume.name} #{release.issue_number}
+                      </h3>
+                      {release.name && (
+                        <p className="text-sm text-muted-foreground truncate">
+                          {release.name}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       </CardContent>
     </Card>
