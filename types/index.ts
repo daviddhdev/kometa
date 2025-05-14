@@ -115,6 +115,8 @@ export interface VolumeSearchProps {
   searchResults: ComicVineResponse | null;
   isSearching: boolean;
   searchError: string | null;
+  sortOrder: string;
+  setSortOrder: (order: string) => void;
 }
 
 export interface VolumeInfoCardProps {

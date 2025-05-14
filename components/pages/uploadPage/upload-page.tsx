@@ -94,6 +94,7 @@ export default function UploadPage() {
   } | null>(null);
   const [isUpdatingIssue, setIsUpdatingIssue] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [sortOrder, setSortOrder] = useState("name-asc");
 
   const debouncedSearch = useCallback((query: string) => {
     setDebouncedSearchQuery(query);
@@ -457,6 +458,8 @@ export default function UploadPage() {
                 searchResults={searchResults ?? null}
                 isSearching={isSearching}
                 searchError={searchError}
+                sortOrder={sortOrder}
+                setSortOrder={setSortOrder}
               />
               <VolumeInfoCard selectedVolume={selectedVolume} />
             </div>

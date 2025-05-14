@@ -1,5 +1,12 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { VolumeSearchProps } from "@/types";
 import { useQuery } from "@tanstack/react-query";
 import { useVirtualizer } from "@tanstack/react-virtual";
@@ -17,6 +24,8 @@ export default function VolumeSearch({
   searchResults,
   isSearching,
   searchError,
+  sortOrder,
+  setSortOrder,
 }: VolumeSearchProps) {
   const parentRef = useRef<HTMLDivElement>(null);
 
@@ -52,19 +61,48 @@ export default function VolumeSearch({
     overscan: 5, // Number of items to render outside of the visible area
   });
 
+  // Sort the results based on the selected sort order
+  const sortedResults = searchResults?.results?.slice().sort((a, b) => {
+    switch (sortOrder) {
+      case "name-asc":
+        return a.name.localeCompare(b.name);
+      case "name-desc":
+        return b.name.localeCompare(a.name);
+      case "date-asc":
+        return (a.start_year || 0) - (b.start_year || 0);
+      case "date-desc":
+        return (b.start_year || 0) - (a.start_year || 0);
+      default:
+        return 0;
+    }
+  });
+
   return (
     <div className="space-y-4 volume-search">
       <div className="space-y-2">
         <Label>Search for a Volume</Label>
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            type="text"
-            placeholder="Search for a volume..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9"
-          />
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Search for a volume..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <Select value={sortOrder} onValueChange={setSortOrder}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="name-asc">Name (A-Z)</SelectItem>
+              <SelectItem value="name-desc">Name (Z-A)</SelectItem>
+              <SelectItem value="date-asc">Year (Oldest)</SelectItem>
+              <SelectItem value="date-desc">Year (Newest)</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -84,7 +122,7 @@ export default function VolumeSearch({
             <div className="p-4 text-center text-destructive">
               {searchError}
             </div>
-          ) : searchResults?.results && searchResults.results.length > 0 ? (
+          ) : sortedResults && sortedResults.length > 0 ? (
             <div
               style={{
                 height: `${rowVirtualizer.getTotalSize()}px`,
@@ -93,7 +131,7 @@ export default function VolumeSearch({
               }}
             >
               {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-                const result = searchResults.results[virtualRow.index];
+                const result = sortedResults[virtualRow.index];
                 return (
                   <div
                     key={result.id}
@@ -119,7 +157,7 @@ export default function VolumeSearch({
                         className="object-cover rounded"
                       />
                     </div>
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <div className="font-medium flex items-center gap-2">
                         {result.name}
                         {existingVolumes?.[result.id] && (
