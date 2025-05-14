@@ -11,6 +11,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { LoadingPlaceholder } from "@/components/ui/loading-placeholder";
 import { VolumeCard } from "@/components/utils/volume-card";
 import type { Volume } from "@/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -110,7 +111,11 @@ export default function CollectionPage({ id }: { id: string }) {
   });
 
   if (isLoadingCollection || isLoadingVolumes) {
-    return <div>Loading collection...</div>;
+    return (
+      <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
+        <LoadingPlaceholder text="Loading collection..." />
+      </div>
+    );
   }
 
   if (!collection) {
@@ -168,7 +173,9 @@ export default function CollectionPage({ id }: { id: string }) {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[60vh] overflow-y-auto py-2">
               {isLoadingAvailableVolumes ? (
-                <div>Loading volumes...</div>
+                <div className="flex h-32 items-center justify-center">
+                  <LoadingPlaceholder text="Loading volumes..." />
+                </div>
               ) : filteredAvailableVolumes?.length === 0 ? (
                 <div className="col-span-full text-center text-muted-foreground">
                   No volumes found

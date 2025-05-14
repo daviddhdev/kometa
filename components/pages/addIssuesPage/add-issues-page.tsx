@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { LoadingPlaceholder } from "@/components/ui/loading-placeholder";
 import {
   Select,
   SelectContent,
@@ -44,6 +45,21 @@ function getFileIcon(fileName: string) {
   return <FileImage className="w-8 h-8 text-muted-foreground" />;
 }
 
+interface VolumeData {
+  volume: {
+    id: string;
+    title: string;
+    publisher: string;
+    year: number;
+    issues: Array<{
+      id: string;
+      issue_number: number;
+      title: string;
+      cover_date: string;
+    }>;
+  };
+}
+
 export default function AddIssuesPage({ volumeId }: { volumeId: string }) {
   const router = useRouter();
   const [uploadedIssues, setUploadedIssues] = useState<ComicFile[]>([]);
@@ -52,9 +68,10 @@ export default function AddIssuesPage({ volumeId }: { volumeId: string }) {
     title: string;
   } | null>(null);
   const [isUpdatingIssue, setIsUpdatingIssue] = useState(false);
+  const [isLoadingVolumeDetails, setIsLoadingVolumeDetails] = useState(true);
 
   // Fetch volume details and issues
-  const { data: volumeData } = useQuery({
+  const { data: volumeData, isLoading } = useQuery<VolumeData>({
     queryKey: ["getVolume", volumeId],
     queryFn: async () => {
       const response = await fetch(`/api/volumes/${volumeId}`);
@@ -67,9 +84,9 @@ export default function AddIssuesPage({ volumeId }: { volumeId: string }) {
 
   // Update useEffect to handle stored issues
   useEffect(() => {
-    if (volumeData?.issues && volumeData.issues.length > 0) {
+    if (volumeData?.volume.issues && volumeData.volume.issues.length > 0) {
       // Create ComicFile objects for stored issues
-      const existingIssues = volumeData.issues.map((issue: any) => ({
+      const existingIssues = volumeData.volume.issues.map((issue: any) => ({
         title: issue.title || `Issue ${issue.issue_number}`,
         summary: issue.summary || "",
         issueNumber: issue.issue_number,
@@ -79,7 +96,7 @@ export default function AddIssuesPage({ volumeId }: { volumeId: string }) {
 
       setUploadedIssues(existingIssues);
     }
-  }, [volumeData?.issues]);
+  }, [volumeData?.volume.issues]);
 
   const addIssue = () => {
     setUploadedIssues((prev) => [
@@ -189,17 +206,17 @@ export default function AddIssuesPage({ volumeId }: { volumeId: string }) {
         JSON.stringify({
           volume: {
             id: volumeData.volume.id,
-            name: volumeData.volume.name,
+            name: volumeData.volume.title,
             publisher: volumeData.volume.publisher,
-            start_year: volumeData.volume.start_year,
-            count_of_issues: volumeData.volume.count_of_issues,
-            description: volumeData.volume.description,
-            image: volumeData.volume.image,
-            site_detail_url: volumeData.volume.site_detail_url,
-            aliases: volumeData.volume.aliases,
-            deck: volumeData.volume.deck,
-            date_added: volumeData.volume.date_added,
-            date_last_updated: volumeData.volume.date_last_updated,
+            start_year: volumeData.volume.year,
+            count_of_issues: volumeData.volume.issues.length,
+            description: "",
+            image: "",
+            site_detail_url: "",
+            aliases: [],
+            deck: "",
+            date_added: "",
+            date_last_updated: "",
           },
         })
       );
@@ -277,11 +294,21 @@ export default function AddIssuesPage({ volumeId }: { volumeId: string }) {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-6">
+        <div className="flex h-32 items-center justify-center">
+          <LoadingPlaceholder text="Loading volume details..." />
+        </div>
+      </div>
+    );
+  }
+
   if (!volumeData?.volume) {
     return (
       <div className="container mx-auto px-4 py-6">
-        <div className="flex items-center justify-center h-[50vh]">
-          <p className="text-muted-foreground">Loading volume details...</p>
+        <div className="flex h-32 items-center justify-center">
+          <LoadingPlaceholder text="Loading volume details..." />
         </div>
       </div>
     );
@@ -302,7 +329,7 @@ export default function AddIssuesPage({ volumeId }: { volumeId: string }) {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
-            Add Issues to {volume.name}
+            Add Issues to {volume.title}
           </h1>
           <p className="text-muted-foreground mt-1">
             Upload new issues to this volume
@@ -367,16 +394,11 @@ export default function AddIssuesPage({ volumeId }: { volumeId: string }) {
                           <SelectValue placeholder="Select" />
                         </SelectTrigger>
                         <SelectContent>
-                          {[...Array(volume.count_of_issues || 1)].map(
-                            (_, i) => (
-                              <SelectItem
-                                key={i + 1}
-                                value={(i + 1).toString()}
-                              >
-                                {i + 1}
-                              </SelectItem>
-                            )
-                          )}
+                          {[...Array(volume.issues.length)].map((_, i) => (
+                            <SelectItem key={i + 1} value={(i + 1).toString()}>
+                              {i + 1}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>

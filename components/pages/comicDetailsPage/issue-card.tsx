@@ -9,6 +9,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { LoadingPlaceholder } from "@/components/ui/loading-placeholder";
 import { Progress } from "@/components/ui/progress";
 import { downloadFile } from "@/lib/utils";
 import type { Issue } from "@/types";
@@ -116,16 +117,8 @@ export function IssueCard({
               </span>
             </div>
           ) : isLoadingPages ? (
-            <div className="flex h-full w-40 aspect-[2/3] items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5 text-primary font-medium text-xl rounded-l-lg border border-border shadow-md relative overflow-hidden">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent animate-pulse" />
-              <div className="relative z-10 flex flex-col items-center gap-1">
-                <span className="text-2xl font-bold">
-                  #{issue.issue_number}
-                </span>
-                <span className="text-xs text-primary/70 animate-pulse">
-                  Loading...
-                </span>
-              </div>
+            <div className="flex h-32 items-center justify-center">
+              <LoadingPlaceholder text="Loading pages..." />
             </div>
           ) : (
             <div className="flex h-full w-40 aspect-[2/3] items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5 text-primary font-medium text-xl rounded-l-lg border border-border shadow-md relative overflow-hidden">

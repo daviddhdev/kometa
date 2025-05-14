@@ -1,6 +1,7 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { LoadingPlaceholder } from "@/components/ui/loading-placeholder";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { RefreshCw } from "lucide-react";
 import Image from "next/image";
@@ -108,8 +109,8 @@ export function UpcomingReleasesCalendar() {
           <CardTitle>Upcoming Releases</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <div className="flex h-64 items-center justify-center">
+            <LoadingPlaceholder text="Loading upcoming releases..." />
           </div>
         </CardContent>
       </Card>

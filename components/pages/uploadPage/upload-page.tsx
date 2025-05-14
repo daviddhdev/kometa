@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { LoadingPlaceholder } from "@/components/ui/loading-placeholder";
 import {
   Select,
   SelectContent,
@@ -92,6 +93,7 @@ export default function UploadPage() {
     title: string;
   } | null>(null);
   const [isUpdatingIssue, setIsUpdatingIssue] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   const debouncedSearch = useCallback((query: string) => {
     setDebouncedSearchQuery(query);
@@ -303,6 +305,7 @@ export default function UploadPage() {
       return;
     }
 
+    setIsUploading(true);
     let hasError = false;
 
     // Create FormData for each issue
@@ -364,6 +367,7 @@ export default function UploadPage() {
       }
     }
 
+    setIsUploading(false);
     if (!hasError) {
       // Redirect to the volume page
       router.push(`/comics/${selectedVolume.id}`);
@@ -430,159 +434,168 @@ export default function UploadPage() {
         </div>
       </div>
 
-      <Tabs defaultValue="basic" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 mb-8">
-          <TabsTrigger value="basic">Basic Info</TabsTrigger>
-          <TabsTrigger value="issues">Issues</TabsTrigger>
-        </TabsList>
+      {isUploading ? (
+        <div className="flex h-[50vh] items-center justify-center">
+          <LoadingPlaceholder text="Uploading issues..." />
+        </div>
+      ) : (
+        <Tabs defaultValue="basic" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-8">
+            <TabsTrigger value="basic">Basic Info</TabsTrigger>
+            <TabsTrigger value="issues">Issues</TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="basic">
-          <div className="flex flex-col gap-8">
-            <VolumeSearch
-              searchQuery={searchQuery}
-              setSearchQuery={setSearchQuery}
-              showSearchResults={showSearchResults}
-              setShowSearchResults={setShowSearchResults}
-              handleVolumeSelect={handleVolumeSelect}
-              selectedVolume={selectedVolume}
-              searchResults={searchResults ?? null}
-              isSearching={isSearching}
-              searchError={searchError}
-            />
-            <VolumeInfoCard selectedVolume={selectedVolume} />
-          </div>
-        </TabsContent>
-
-        <TabsContent value="issues">
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold">Comic Issues</h2>
-              <Button
-                variant="default"
-                onClick={addIssue}
-                className="flex items-center gap-2"
-              >
-                <PlusCircle className="h-5 w-5" />
-                Add Issue
-              </Button>
+          <TabsContent value="basic">
+            <div className="flex flex-col gap-8">
+              <VolumeSearch
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                showSearchResults={showSearchResults}
+                setShowSearchResults={setShowSearchResults}
+                handleVolumeSelect={handleVolumeSelect}
+                selectedVolume={selectedVolume}
+                searchResults={searchResults ?? null}
+                isSearching={isSearching}
+                searchError={searchError}
+              />
+              <VolumeInfoCard selectedVolume={selectedVolume} />
             </div>
+          </TabsContent>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {uploadedIssues.map((issue, index) => (
-                <Card
-                  key={`issue-${issue.storedIssueId || index}`}
-                  className="relative border-2 border-muted-foreground/10 shadow-sm"
+          <TabsContent value="issues">
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold">Comic Issues</h2>
+                <Button
+                  variant="default"
+                  onClick={addIssue}
+                  className="flex items-center gap-2"
+                  disabled={isUpdatingIssue}
                 >
-                  <CardContent className="flex flex-col gap-4 p-6">
-                    <div className="flex items-center gap-4">
-                      <div className="flex-shrink-0">
-                        {issue.file ? (
-                          getFileIcon(issue.file.name)
-                        ) : issue.isStored ? (
-                          <FileArchive className="w-8 h-8 text-muted-foreground" />
-                        ) : (
-                          <FileImage className="w-8 h-8 text-muted-foreground" />
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <Label>Issue</Label>
-                          <Select
-                            value={issue.issueNumber?.toString()}
-                            onValueChange={(value) => {
-                              if (issue.isStored) {
-                                handleIssueNumberChange(
-                                  issue.storedIssueId!,
-                                  parseInt(value)
-                                );
-                              } else {
-                                setUploadedIssues((prev) =>
-                                  prev.map((iss, idx) =>
-                                    idx === index
-                                      ? { ...iss, issueNumber: parseInt(value) }
-                                      : iss
-                                  )
-                                );
-                              }
-                            }}
-                            disabled={isUpdatingIssue && issue.isStored}
-                          >
-                            <SelectTrigger className="w-24">
-                              <SelectValue placeholder="Select" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {[
-                                ...Array(selectedVolume?.count_of_issues || 1),
-                              ].map((_, i) => (
-                                <SelectItem
-                                  key={i + 1}
-                                  value={(i + 1).toString()}
-                                >
-                                  {i + 1}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                  <PlusCircle className="h-5 w-5" />
+                  Add Issue
+                </Button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {uploadedIssues.map((issue, index) => (
+                  <Card
+                    key={`issue-${issue.storedIssueId || index}`}
+                    className="relative border-2 border-muted-foreground/10 shadow-sm"
+                  >
+                    <CardContent className="flex flex-col gap-4 p-6">
+                      <div className="flex items-center gap-4">
+                        <div className="flex-shrink-0">
+                          {issue.file ? (
+                            getFileIcon(issue.file.name)
+                          ) : issue.isStored ? (
+                            <FileArchive className="w-8 h-8 text-muted-foreground" />
+                          ) : (
+                            <FileImage className="w-8 h-8 text-muted-foreground" />
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <Label>Issue</Label>
+                            <Select
+                              value={issue.issueNumber?.toString()}
+                              onValueChange={(value) => {
+                                if (issue.isStored) {
+                                  handleIssueNumberChange(
+                                    issue.storedIssueId!,
+                                    parseInt(value)
+                                  );
+                                } else {
+                                  setUploadedIssues((prev) =>
+                                    prev.map((iss, idx) =>
+                                      idx === index
+                                        ? {
+                                            ...iss,
+                                            issueNumber: parseInt(value),
+                                          }
+                                        : iss
+                                    )
+                                  );
+                                }
+                              }}
+                              disabled={isUpdatingIssue}
+                            >
+                              <SelectTrigger className="w-24">
+                                <SelectValue placeholder="Select" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {[...Array(issueCount)].map((_, i) => (
+                                  <SelectItem
+                                    key={i + 1}
+                                    value={(i + 1).toString()}
+                                  >
+                                    {i + 1}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          {issue.isStored ? (
+                            <div className="mt-2 text-sm text-muted-foreground">
+                              {issue.title}
+                            </div>
+                          ) : (
+                            <Input
+                              type="file"
+                              accept=".cbz,.cbr,.pdf"
+                              onChange={(e) => handleIssueUpload(e, index)}
+                              className="mt-2"
+                              disabled={isUpdatingIssue}
+                            />
+                          )}
                         </div>
                         {issue.isStored ? (
-                          <div className="mt-2 text-sm text-muted-foreground">
-                            {issue.title}
-                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() =>
+                              setIssueToDelete({
+                                id: issue.storedIssueId!,
+                                title: issue.title,
+                              })
+                            }
+                            className="absolute top-2 right-2"
+                            disabled={isUpdatingIssue}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
                         ) : (
-                          <Input
-                            type="file"
-                            accept=".cbz,.cbr,.pdf"
-                            onChange={(e) => handleIssueUpload(e, index)}
-                            className="mt-2"
-                          />
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeIssue(index)}
+                            className="absolute top-2 right-2"
+                            disabled={isUpdatingIssue}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
                         )}
                       </div>
-                      {issue.isStored ? (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() =>
-                            setIssueToDelete({
-                              id: issue.storedIssueId!,
-                              title: issue.title,
-                            })
-                          }
-                          className="absolute top-2 right-2"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeIssue(index)}
-                          className="absolute top-2 right-2"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
 
-            <div className="flex justify-end mt-6">
-              <Button
-                onClick={handleSubmit}
-                disabled={
-                  !selectedVolume ||
-                  uploadedIssues.filter((issue) => issue?.file).length === 0
-                }
-              >
-                {!selectedVolume
-                  ? "Select a Volume First"
-                  : "Upload All Issues"}
-              </Button>
+              <div className="flex justify-end mt-6">
+                <Button
+                  onClick={handleSubmit}
+                  disabled={
+                    uploadedIssues.filter((issue) => issue?.file).length ===
+                      0 || isUpdatingIssue
+                  }
+                >
+                  Upload All Issues
+                </Button>
+              </div>
             </div>
-          </div>
-        </TabsContent>
-      </Tabs>
+          </TabsContent>
+        </Tabs>
+      )}
 
       <AlertDialog
         open={!!issueToDelete}

@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { LoadingPlaceholder } from "@/components/ui/loading-placeholder";
 import { Textarea } from "@/components/ui/textarea";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Library, Plus } from "lucide-react";
@@ -80,8 +81,8 @@ export default function CollectionsPage() {
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-center h-[50vh]">
-          <p className="text-muted-foreground">Loading collections...</p>
+        <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
+          <LoadingPlaceholder text="Loading collections..." />
         </div>
       </div>
     );

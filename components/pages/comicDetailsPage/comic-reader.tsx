@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { LoadingPlaceholder } from "@/components/ui/loading-placeholder";
 import { Progress } from "@/components/ui/progress";
 import {
   Tooltip,
@@ -77,7 +78,7 @@ export function ComicReader({
   });
 
   // Load comic pages
-  const { data: pages } = useQuery({
+  const { data: pages, isLoading } = useQuery({
     queryKey: ["comic-pages", filePath],
     queryFn: async () => {
       const response = await fetch(`/api/issues/${issueId}/pages`);
@@ -222,10 +223,10 @@ export function ComicReader({
     }
   };
 
-  if (!pages || pages.length === 0) {
+  if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <p className="text-muted-foreground">Loading pages...</p>
+      <div className="flex h-full items-center justify-center">
+        <LoadingPlaceholder text="Loading pages..." />
       </div>
     );
   }
