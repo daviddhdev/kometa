@@ -117,6 +117,10 @@ export interface VolumeSearchProps {
   searchError: string | null;
   sortOrder: string;
   setSortOrder: (order: string) => void;
+  searchYear: string;
+  setSearchYear: (year: string) => void;
+  searchPublisher: string;
+  setSearchPublisher: (publisher: string) => void;
 }
 
 export interface VolumeInfoCardProps {

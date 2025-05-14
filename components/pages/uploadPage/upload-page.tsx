@@ -82,6 +82,8 @@ export default function UploadPage() {
   const [issueCount, setIssueCount] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+  const [searchYear, setSearchYear] = useState("");
+  const [searchPublisher, setSearchPublisher] = useState("");
   const [selectedVolume, setSelectedVolume] = useState<ComicVineVolume | null>(
     null
   );
@@ -120,9 +122,16 @@ export default function UploadPage() {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-      if (!target.closest(".volume-search")) {
-        setShowSearchResults(false);
+      // Don't close if clicking on volume-search or any Select components
+      if (
+        target.closest(".volume-search") ||
+        target.closest("[role='listbox']") ||
+        target.closest("[role='option']") ||
+        target.closest("[role='combobox']")
+      ) {
+        return;
       }
+      setShowSearchResults(false);
     };
 
     document.addEventListener("mousedown", handleClickOutside);
@@ -138,7 +147,7 @@ export default function UploadPage() {
         if (!debouncedSearchQuery) return null;
         try {
           const response = await fetch(
-            `/api/volume-info?name=${debouncedSearchQuery}`
+            `/api/volume-info?name=${encodeURIComponent(debouncedSearchQuery)}`
           );
           const data = await response.json();
 
@@ -162,6 +171,33 @@ export default function UploadPage() {
       },
       enabled: debouncedSearchQuery.length > 2,
     });
+
+  // Filter results based on year and publisher
+  const filteredResults = useMemo(() => {
+    if (!searchResults?.results) return null;
+
+    return {
+      ...searchResults,
+      results: searchResults.results.filter((result) => {
+        // Filter by publisher if specified
+        if (searchPublisher && searchPublisher !== "any") {
+          const publisherMatch =
+            result.publisher?.name.toLowerCase() ===
+            searchPublisher.toLowerCase();
+          if (!publisherMatch) return false;
+        }
+
+        // Filter by year if specified
+        if (searchYear && searchYear !== "any") {
+          const lastUpdated = new Date(result.date_last_updated);
+          const year = lastUpdated.getFullYear();
+          if (year.toString() !== searchYear) return false;
+        }
+
+        return true;
+      }),
+    };
+  }, [searchResults, searchPublisher, searchYear]);
 
   // Add query for stored issues
   const { data: storedIssues } = useQuery({
@@ -455,11 +491,15 @@ export default function UploadPage() {
                 setShowSearchResults={setShowSearchResults}
                 handleVolumeSelect={handleVolumeSelect}
                 selectedVolume={selectedVolume}
-                searchResults={searchResults ?? null}
+                searchResults={filteredResults ?? null}
                 isSearching={isSearching}
                 searchError={searchError}
                 sortOrder={sortOrder}
                 setSortOrder={setSortOrder}
+                searchYear={searchYear}
+                setSearchYear={setSearchYear}
+                searchPublisher={searchPublisher}
+                setSearchPublisher={setSearchPublisher}
               />
               <VolumeInfoCard selectedVolume={selectedVolume} />
             </div>
