@@ -37,7 +37,10 @@ export function ComicProvider({ children }: { children: ReactNode }) {
         volume.description?.toLowerCase().includes(searchLower);
 
       // Read status filter (if we had read status in the schema)
-      const matchesReadStatus = readStatus === "all" || true; // TODO: Implement read status filtering when we add it to the schema
+      const matchesReadStatus =
+        readStatus === "all" ||
+        (readStatus === "read" && volume.is_fully_read) ||
+        (readStatus === "unread" && !volume.is_fully_read);
 
       // Favorite filter
       const matchesFavorite =

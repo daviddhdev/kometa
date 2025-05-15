@@ -79,7 +79,6 @@ export default function ComicFilters() {
               <SelectItem value="all">All Comics</SelectItem>
               <SelectItem value="read">Read</SelectItem>
               <SelectItem value="unread">Unread</SelectItem>
-              <SelectItem value="in-progress">In Progress</SelectItem>
             </SelectContent>
           </Select>
         </div>
