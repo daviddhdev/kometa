@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { BookOpen, Calendar, Library } from "lucide-react";
+import { BookOpen, Calendar, LayoutDashboard, Library } from "lucide-react";
 import Link from "next/link";
 
 export function Nav() {
@@ -25,6 +25,12 @@ export function Nav() {
               <Button variant="ghost">
                 <Calendar className="h-4 w-4 mr-2" />
                 Upcoming
+              </Button>
+            </Link>
+            <Link href="/dashboard">
+              <Button variant="ghost">
+                <LayoutDashboard className="h-4 w-4 mr-2" />
+                Dashboard
               </Button>
             </Link>
           </div>
