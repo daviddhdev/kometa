@@ -86,3 +86,13 @@ export const upcoming_releases = pgTable("upcoming_releases", {
   last_updated: timestamp("last_updated", { withTimezone: true }).defaultNow(),
   cover_image: varchar("cover_image", { length: 512 }),
 });
+
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  username: varchar("username", { length: 255 }).notNull().unique(),
+  password_hash: varchar("password_hash", { length: 255 }).notNull(),
+  is_admin: boolean("is_admin").default(false),
+  created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  last_login: timestamp("last_login", { withTimezone: true }),
+  password_changed: boolean("password_changed").default(false),
+});
