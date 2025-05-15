@@ -1,18 +1,10 @@
 import { issues, reading_progress, volumes } from "@/drizzle/schema";
 import { db } from "@/lib/db";
 import { desc, eq, sql } from "drizzle-orm";
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("auth_token")?.value;
-
-    if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     // Get total volumes count
     const totalVolumes = await db
       .select({ count: sql<number>`count(*)` })
@@ -56,6 +48,7 @@ export async function GET() {
         issueNumber: issues.issue_number,
         title: issues.title,
         volumeName: volumes.name,
+        volumeId: volumes.id,
         completedAt: reading_progress.last_read_at,
       })
       .from(reading_progress)

@@ -63,14 +63,12 @@ async function verifyToken(token: string): Promise<boolean> {
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-
   // Allow public paths
   if (publicPaths.some((path) => pathname.startsWith(path))) {
     return NextResponse.next();
   }
 
   const token = request.cookies.get("auth_token")?.value;
-
   if (!token) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
@@ -79,7 +77,6 @@ export async function middleware(request: NextRequest) {
   if (!isValid) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
-
   return NextResponse.next();
 }
 

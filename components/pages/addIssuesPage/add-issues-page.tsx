@@ -51,13 +51,13 @@ interface VolumeData {
     title: string;
     publisher: string;
     year: number;
-    issues: Array<{
-      id: string;
-      issue_number: number;
-      title: string;
-      cover_date: string;
-    }>;
   };
+  issues: Array<{
+    id: string;
+    issue_number: number;
+    title: string;
+    cover_date: string;
+  }>;
 }
 
 export default function AddIssuesPage({ volumeId }: { volumeId: string }) {
@@ -68,7 +68,6 @@ export default function AddIssuesPage({ volumeId }: { volumeId: string }) {
     title: string;
   } | null>(null);
   const [isUpdatingIssue, setIsUpdatingIssue] = useState(false);
-  const [isLoadingVolumeDetails, setIsLoadingVolumeDetails] = useState(true);
 
   // Fetch volume details and issues
   const { data: volumeData, isLoading } = useQuery<VolumeData>({
@@ -84,9 +83,9 @@ export default function AddIssuesPage({ volumeId }: { volumeId: string }) {
 
   // Update useEffect to handle stored issues
   useEffect(() => {
-    if (volumeData?.volume.issues && volumeData.volume.issues.length > 0) {
+    if (volumeData?.issues && volumeData.issues.length > 0) {
       // Create ComicFile objects for stored issues
-      const existingIssues = volumeData.volume.issues.map((issue: any) => ({
+      const existingIssues = volumeData.issues.map((issue: any) => ({
         title: issue.title || `Issue ${issue.issue_number}`,
         summary: issue.summary || "",
         issueNumber: issue.issue_number,
@@ -96,7 +95,7 @@ export default function AddIssuesPage({ volumeId }: { volumeId: string }) {
 
       setUploadedIssues(existingIssues);
     }
-  }, [volumeData?.volume.issues]);
+  }, [volumeData?.issues]);
 
   const addIssue = () => {
     setUploadedIssues((prev) => [
@@ -209,7 +208,7 @@ export default function AddIssuesPage({ volumeId }: { volumeId: string }) {
             name: volumeData.volume.title,
             publisher: volumeData.volume.publisher,
             start_year: volumeData.volume.year,
-            count_of_issues: volumeData.volume.issues.length,
+            count_of_issues: volumeData.issues.length,
             description: "",
             image: "",
             site_detail_url: "",
@@ -394,7 +393,7 @@ export default function AddIssuesPage({ volumeId }: { volumeId: string }) {
                           <SelectValue placeholder="Select" />
                         </SelectTrigger>
                         <SelectContent>
-                          {[...Array(volume.issues.length)].map((_, i) => (
+                          {[...Array(volumeData.issues.length)].map((_, i) => (
                             <SelectItem key={i + 1} value={(i + 1).toString()}>
                               {i + 1}
                             </SelectItem>
