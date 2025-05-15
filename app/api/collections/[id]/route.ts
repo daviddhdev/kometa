@@ -41,10 +41,11 @@ export async function GET(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const collectionId = parseInt(params.id);
+    const { id } = await params;
+    const collectionId = parseInt(id);
     if (isNaN(collectionId)) {
       return NextResponse.json(
         { error: "Invalid collection ID" },

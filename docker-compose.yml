@@ -1,25 +1,49 @@
 services:
   comic-manager:
-    image: comic-manager
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
       - "3000:3000"
     volumes:
       - ./comics:/app/comics
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=${DATABASE_URL}
+      - COMIC_VINE_API_KEY=${COMIC_VINE_API_KEY}
+      - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
+      - GOTIFY_URL=${GOTIFY_URL}
+      - GOTIFY_APP_TOKEN=${GOTIFY_APP_TOKEN}
     restart: unless-stopped
     depends_on:
       - db
+      - gotify
 
   db:
     image: postgres:15
     restart: always
     environment:
-      POSTGRES_DB: comics
-      POSTGRES_USER: comicuser
-      POSTGRES_PASSWORD: comicpass
+      POSTGRES_DB: ${POSTGRES_DB:-comics}
+      POSTGRES_USER: ${POSTGRES_USER:-comicuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-comicpass}
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
 
+  gotify:
+    image: gotify/server
+    pull_policy: always
+    ports:
+      - "8081:80"
+    environment:
+      GOTIFY_DEFAULTUSER_NAME: ${GOTIFY_ADMIN_USER:-admin}
+      GOTIFY_DEFAULTUSER_PASS: ${GOTIFY_ADMIN_PASS:-admin}
+      GOTIFY_SERVER_CORS_ALLOWORIGINS: "[http://127.0.0.1:3000,http://localhost:3000,comic-manager:3000]"
+    volumes:
+      - gotify_data:/app/data
+    restart: unless-stopped
+
 volumes:
   pgdata:
+  gotify_data:

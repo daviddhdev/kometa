@@ -1,9 +1,11 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useQuery } from "@tanstack/react-query";
 import {
+  Bell,
   BookOpen,
   Building2,
   CheckCircle2,
@@ -12,8 +14,10 @@ import {
   Star,
 } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 
 export default function DashboardPage() {
+  const [isSending, setIsSending] = useState(false);
   const { data: stats, isLoading } = useQuery({
     queryKey: ["user-stats"],
     queryFn: async () => {
@@ -22,6 +26,22 @@ export default function DashboardPage() {
       return response.json();
     },
   });
+
+  const handleTestNotification = async () => {
+    setIsSending(true);
+    try {
+      const response = await fetch("/api/notifications/test", {
+        method: "POST",
+      });
+      if (!response.ok) {
+        throw new Error("Failed to send test notification");
+      }
+    } catch (error) {
+      console.error("Failed to send test notification:", error);
+    } finally {
+      setIsSending(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -47,7 +67,18 @@ export default function DashboardPage() {
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">Dashboard</h1>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleTestNotification}
+          disabled={isSending}
+        >
+          <Bell className="h-4 w-4 mr-2" />
+          {isSending ? "Sending..." : "Test Notification"}
+        </Button>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <Card>

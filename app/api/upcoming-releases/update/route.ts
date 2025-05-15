@@ -1,3 +1,4 @@
+import { notificationService } from "@/app/lib/notifications";
 import { upcoming_releases, volumes } from "@/drizzle/schema";
 import { db } from "@/lib/db";
 import { NextResponse } from "next/server";
@@ -92,6 +93,15 @@ export async function POST() {
 
     if (releasesToInsert.length > 0) {
       await db.insert(upcoming_releases).values(releasesToInsert);
+
+      // Send notifications for new releases
+      for (const release of newReleases) {
+        await notificationService.sendNotification(
+          "New Comic Release",
+          `${release.volume.name} #${release.issue_number} is now available!`,
+          7
+        );
+      }
     }
 
     return NextResponse.json({
