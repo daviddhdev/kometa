@@ -10,7 +10,7 @@ import { initializeAdminUser } from "./lib/init-admin";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Comic Reader",
+  title: "Kometa",
   description: "Your personal comic collection manager",
 };
 

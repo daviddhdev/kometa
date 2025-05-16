@@ -6,7 +6,7 @@ import ComicGrid from "@/components/pages/homePage/comic-grid";
 export function HomePage() {
   return (
     <div className="container mx-auto p-4 space-y-6">
-      <h1 className="text-3xl font-bold">Welcome to Comic Reader</h1>
+      <h1 className="text-3xl font-bold">Welcome to Kometa</h1>
       <ComicFilters />
       <ComicGrid />
     </div>

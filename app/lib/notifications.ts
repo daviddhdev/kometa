@@ -1,55 +1,39 @@
-import { env } from "../env";
+import webpush from "web-push";
 
-interface NotificationConfig {
-  gotifyUrl: string;
-  applicationToken: string;
-}
+webpush.setVapidDetails(
+  `mailto:${process.env.NEXT_PUBLIC_VAPID_EMAIL!}`,
+  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
+  process.env.VAPID_PRIVATE_KEY!
+);
 
-class NotificationService {
-  private config: NotificationConfig;
+let subscription: webpush.PushSubscription | null = null;
 
-  constructor() {
-    this.config = {
-      gotifyUrl: env.GOTIFY_URL || "http://localhost:8081",
-      applicationToken: env.GOTIFY_APP_TOKEN || "",
-    };
+export class NotificationService {
+  static setSubscription(sub: webpush.PushSubscription) {
+    subscription = sub;
   }
 
-  async sendNotification(title: string, message: string, priority: number = 5) {
-    console.log(env.GOTIFY_URL, env.GOTIFY_APP_TOKEN);
-    console.log(this.config);
-    if (!this.config.applicationToken) {
-      console.error("Gotify application token is not configured");
-      return false;
+  static clearSubscription() {
+    subscription = null;
+  }
+
+  static async sendNotification(title: string, message: string) {
+    if (!subscription) {
+      console.error("No push subscription available");
+      return;
     }
 
     try {
-      const response = await fetch(`${this.config.gotifyUrl}/message`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Gotify-Key": this.config.applicationToken,
-        },
-        body: JSON.stringify({
+      await webpush.sendNotification(
+        subscription,
+        JSON.stringify({
           title,
-          message,
-          priority,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(
-          `Failed to send notification: ${response.statusText} - ${errorText}`
-        );
-      }
-
-      return true;
+          body: message,
+          icon: "/icon-192x192.png",
+        })
+      );
     } catch (error) {
-      console.error("Error sending notification:", error);
-      return false;
+      console.error("Error sending push notification:", error);
     }
   }
 }
-
-export const notificationService = new NotificationService();

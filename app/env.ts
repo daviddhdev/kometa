@@ -1,8 +1,8 @@
 import { z } from "zod";
 
-const envSchema = z.object({
-  GOTIFY_URL: z.string().optional(),
-  GOTIFY_APP_TOKEN: z.string().optional(),
-});
-
-export const env = envSchema.parse(process.env);
+export const env = z
+  .object({
+    NEXT_PUBLIC_VAPID_PUBLIC_KEY: z.string(),
+    VAPID_PRIVATE_KEY: z.string(),
+  })
+  .parse(process.env);

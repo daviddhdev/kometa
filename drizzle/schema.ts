@@ -96,3 +96,19 @@ export const users = pgTable("users", {
   last_login: timestamp("last_login", { withTimezone: true }),
   password_changed: boolean("password_changed").default(false),
 });
+
+export const push_subscriptions = pgTable(
+  "push_subscriptions",
+  {
+    id: serial("id").primaryKey(),
+    user_id: integer("user_id")
+      .references(() => users.id)
+      .notNull(),
+    endpoint: varchar("endpoint", { length: 512 }).notNull(),
+    p256dh: varchar("p256dh", { length: 255 }).notNull(),
+    auth: varchar("auth", { length: 255 }).notNull(),
+    created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
+    updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+  },
+  (table) => [unique().on(table.user_id, table.endpoint)]
+);

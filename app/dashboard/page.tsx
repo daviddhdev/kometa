@@ -1,11 +1,10 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { NotificationSettings } from "@/components/ui/notification-settings";
 import { Progress } from "@/components/ui/progress";
 import { useQuery } from "@tanstack/react-query";
 import {
-  Bell,
   BookOpen,
   Building2,
   CheckCircle2,
@@ -14,10 +13,8 @@ import {
   Star,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
 
 export default function DashboardPage() {
-  const [isSending, setIsSending] = useState(false);
   const { data: stats, isLoading } = useQuery({
     queryKey: ["user-stats"],
     queryFn: async () => {
@@ -26,22 +23,6 @@ export default function DashboardPage() {
       return response.json();
     },
   });
-
-  const handleTestNotification = async () => {
-    setIsSending(true);
-    try {
-      const response = await fetch("/api/notifications/test", {
-        method: "POST",
-      });
-      if (!response.ok) {
-        throw new Error("Failed to send test notification");
-      }
-    } catch (error) {
-      console.error("Failed to send test notification:", error);
-    } finally {
-      setIsSending(false);
-    }
-  };
 
   if (isLoading) {
     return (
@@ -67,18 +48,7 @@ export default function DashboardPage() {
 
   return (
     <div className="container mx-auto p-4">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleTestNotification}
-          disabled={isSending}
-        >
-          <Bell className="h-4 w-4 mr-2" />
-          {isSending ? "Sending..." : "Test Notification"}
-        </Button>
-      </div>
+      <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <Card>
@@ -178,41 +148,40 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Activity</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {stats?.recentActivity.map((activity: any) => (
-              <div
-                key={activity.issueId}
-                className="flex items-center justify-between"
-              >
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <Link
-                      href={`/comics/${activity.volumeId}`}
-                      className="hover:underline"
-                    >
-                      {activity.volumeName} #{activity.issueNumber}
-                    </Link>
-                    {activity.title && (
-                      <p className="text-sm text-muted-foreground">
-                        {activity.title}
-                      </p>
-                    )}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Activity</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {stats?.recentActivity.map((activity: any) => (
+                <div
+                  key={activity.issueId}
+                  className="flex items-center justify-between"
+                >
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <Link
+                        href={`/comics/${activity.volumeId}`}
+                        className="hover:underline"
+                      >
+                        {activity.volumeName} #{activity.issueNumber}
+                      </Link>
+                    </div>
                   </div>
+                  <span className="text-sm text-muted-foreground">
+                    {new Date(activity.completedAt).toLocaleDateString()}
+                  </span>
                 </div>
-                <span className="text-sm text-muted-foreground">
-                  {new Date(activity.completedAt).toLocaleDateString()}
-                </span>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <NotificationSettings />
+      </div>
     </div>
   );
 }

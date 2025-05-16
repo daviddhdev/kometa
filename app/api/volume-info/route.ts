@@ -23,7 +23,7 @@ export const GET = async (
 
   const res = await fetch(url, {
     headers: {
-      "User-Agent": "ComicApp/1.0", // required by Comic Vine
+      "User-Agent": "Kometa/1.0", // required by Comic Vine
     },
   });
 

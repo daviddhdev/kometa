@@ -9,7 +9,7 @@ export function Nav() {
         <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center gap-2">
             <BookOpen className="h-6 w-6" />
-            <span className="font-semibold">Comic Reader</span>
+            <span className="font-semibold">kometa</span>
           </Link>
           <div className="flex items-center gap-4">
             <Link href="/">

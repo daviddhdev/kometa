@@ -64,6 +64,20 @@
       "when": 1747308402156,
       "tag": "0008_square_naoko",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1747396009567,
+      "tag": "0009_narrow_starhawk",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1747397017630,
+      "tag": "0010_breezy_metal_master",
+      "breakpoints": true
     }
   ]
 }
