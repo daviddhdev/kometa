@@ -1,36 +1,74 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# kometa
 
-## Getting Started
+### What is kometa?
 
-First, run the development server:
+Kometa is a self-hostedplatform for managing and reading your comics in one place.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+### How to use kometa?
+
+First of all, you need a ComicVine account and a ComicVine API key.
+
+You can get them by creating an account on [ComicVine](https://comicvine.gamespot.com/login-signup/) and then going to the API page.
+
+Then, you need to create a .env file in the root of the project and add the following variables:
+
+```
+COMIC_VINE_API_KEY=your_comicvine_api_key
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Then you need a database. The project uses PostgreSQL.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```
+DATABASE_URL=your_database_url
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+By default, the project uses a local PostgreSQL database. You can change the database URL in the .env file.
 
-## Learn More
+You will need a jwt secret. You can generate one with `openssl rand -hex 32`
 
-To learn more about Next.js, take a look at the following resources:
+```
+JWT_SECRET=your_jwt_secret
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Also the public url of the app.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+NEXT_PUBLIC_APP_URL=your_app_url
+```
 
-## Deploy on Vercel
+If you want to use push notifications, you need to generate a VAPID key. You can follow the instructions [here](https://www.npmjs.com/package/web-push/).
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Then add the following variables:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=your_vapid_public_key
+VAPID_PRIVATE_KEY=your_vapid_private_key
+VAPID_EMAIL=your_vapid_email
+```
+
+### Docker Setup
+
+To run the application using Docker:
+
+1. Make sure you have Docker and Docker Compose installed on your system.
+
+2. Create a `.env` file in the root directory with all the required environment variables mentioned above.
+
+3. Build the Docker image:
+
+```bash
+docker-compose build
+```
+
+4. Start the containers:
+
+```bash
+docker-compose up -d
+```
+
+This will:
+
+- Start a PostgreSQL database container
+- Build and start the application container
+- Create a persistent volume for the database
+- Mount the `./comics` directory to store comic files

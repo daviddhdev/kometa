@@ -66,7 +66,7 @@ export function PWAManager() {
   async function unsubscribeFromPush() {
     await subscription?.unsubscribe();
     setSubscription(null);
-    await unsubscribeUser();
+    await unsubscribeUser(subscription?.endpoint as string);
   }
 
   async function sendTestNotification() {
