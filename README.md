@@ -1,5 +1,7 @@
 # kometa
 
+![icon-512x512-withbg](https://github.com/user-attachments/assets/d140452e-06dc-4b41-8d9b-94b482954729)
+
 ### What is kometa?
 
 Kometa is a self-hostedplatform for managing and reading your comics in one place.
@@ -7,6 +9,24 @@ Kometa is a self-hostedplatform for managing and reading your comics in one plac
 ### ⚠️ Development Status Warning
 
 This project is currently in active development. While we encourage you to try it out and provide feedback, we do not recommend using it as your primary comic management solution or migrating from other services yet. The project may undergo significant changes, and some features might not be fully stable.
+
+### Prerequisites
+
+Before setting up kometa, ensure you have:
+
+- A ComicVine account and API key (guide below)
+- PostgreSQL database (local or remote)
+- Node.js 18+ (if running without Docker)
+- Docker and Docker Compose (for containerized setup)
+
+### Features
+
+- 📚 Comic library management
+- 🔍 ComicVine integration for metadata
+- 📱 Responsive web interface
+- 🔔 Push notifications (optional)
+- 🐳 Docker support for easy deployment
+- 🔒 Self-hosted solution
 
 ### How to use kometa?
 
@@ -76,3 +96,12 @@ This will:
 - Build and start the application container
 - Create a persistent volume for the database
 - Mount the `./comics` directory to store comic files
+
+### Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
+
+### License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
