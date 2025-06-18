@@ -6,6 +6,8 @@
 
 Kometa is a self-hostedplatform for managing and reading your comics in one place.
 
+[Docs](https://kometa-docs.daviddh.dev/)
+
 ### ⚠️ Development Status Warning
 
 This project is currently in active development. While we encourage you to try it out and provide feedback, we do not recommend using it as your primary comic management solution or migrating from other services yet. The project may undergo significant changes, and some features might not be fully stable.
@@ -27,6 +29,8 @@ Before setting up kometa, ensure you have:
 - 🔔 Push notifications (optional)
 - 🐳 Docker support for easy deployment
 - 🔒 Self-hosted solution
+
+Too see more about the feature visit [the docs](https://kometa-docs.daviddh.dev/features/overview/)
 
 ### How to use kometa?
 
