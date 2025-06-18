@@ -32,6 +32,8 @@ Before setting up kometa, ensure you have:
 
 Too see more about the feature visit [the docs](https://kometa-docs.daviddh.dev/features/overview/)
 
+![og-image](https://kometa-docs.daviddh.dev/og-image.png)
+
 ### How to use kometa?
 
 First of all, you need a ComicVine account and a ComicVine API key.
